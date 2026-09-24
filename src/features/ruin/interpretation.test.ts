@@ -32,4 +32,23 @@ describe('interpretRuin', () => {
     expect(outcome).toContain('nivel de ruina');
     expect(outcome).toContain('no es una recomendación financiera');
   });
+
+  it('does not infer the finite-horizon outcome from positive long-run growth', () => {
+    // Positive edge and log growth, but in 10 rounds ending above 1000 needs ≥ 6 wins (P ≈ 0,4).
+    const result = simulateRuin({ capital: 1000, p: 0.51, gain: 1, loss: 1, fraction: 0.01, rounds: 10, futures: 10000, seed: 'x' });
+    expect(result.exact.expectedLogGrowth).toBeGreaterThan(0);
+    expect(result.medianFinalCapital).toBeLessThan(1000);
+    const [, growth] = interpretRuin(result).map(plain);
+    expect(growth).not.toContain('terminan con más capital');
+    expect(growth).toContain('a la larga');
+    expect(growth).toContain('En estas 10 rondas');
+    expect(growth).toContain('al menos la mitad de los futuros simulados termina con menos capital del que empezó');
+  });
+
+  it('reports a finite-horizon gain when the simulated median ends above the start', () => {
+    const result = simulateRuin({ ...base, fraction: 0.05 });
+    expect(result.medianFinalCapital).toBeGreaterThan(base.capital);
+    const [, growth] = interpretRuin(result).map(plain);
+    expect(growth).toContain('termina con más capital del que empezó');
+  });
 });

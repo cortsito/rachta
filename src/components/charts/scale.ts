@@ -8,11 +8,14 @@ export function linearScale([d0, d1]: readonly [number, number], [r0, r1]: reado
   return (value) => r0 + (value - d0) * factor;
 }
 
-/** Log10 scale; values at or below zero are pinned to the domain minimum. */
+/**
+ * Log10 scale. Values at or below zero have no logarithm and are pinned to the
+ * domain minimum; positive values outside the domain map outside the range.
+ */
 export function logScale([d0, d1]: readonly [number, number], range: readonly [number, number]): Scale {
   if (!(d0 > 0 && d1 > 0)) throw new RangeError('logScale requires a positive domain');
   const inner = linearScale([Math.log10(d0), Math.log10(d1)], range);
-  return (value) => inner(Math.log10(Math.max(value, d0)));
+  return (value) => inner(Math.log10(value > 0 ? value : d0));
 }
 
 function cleanFloat(value: number): number {
@@ -48,11 +51,17 @@ export function niceUpperBound(max: number, maxCount = 5): number {
   return cleanFloat(Math.ceil(max / step) * step);
 }
 
+/** Most ticks on a log axis; wider domains use every 2nd, 3rd, … power of ten. */
+const MAX_LOG_TICKS = 8;
+
 /** Powers of ten in [min, max]; adds 2× and 5× when that would leave fewer than three ticks. */
 export function logTicks(min: number, max: number): number[] {
   if (!(min > 0 && max > min)) return [];
+  const low = Math.ceil(Math.log10(min));
+  const high = Math.floor(Math.log10(max));
+  const every = Math.max(1, Math.ceil((high - low + 1) / MAX_LOG_TICKS));
   const powers: number[] = [];
-  for (let e = Math.ceil(Math.log10(min)); e <= Math.floor(Math.log10(max)); e++) powers.push(cleanFloat(10 ** e));
+  for (let e = Math.ceil(low / every) * every; e <= high; e += every) powers.push(cleanFloat(10 ** e));
   if (powers.length >= 3) return powers;
   const ticks: number[] = [];
   for (let e = Math.floor(Math.log10(min)); e <= Math.ceil(Math.log10(max)); e++) {

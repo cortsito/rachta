@@ -6,11 +6,13 @@
  * by `loss`:  C ← C·(1 + f·gain)  or  C ← C·(1 − f·loss).
  * A future is ruined the first time capital falls below RUIN_FRACTION of the
  * initial capital; it then stops playing and keeps that value.
+ * Inputs are limited so that no path can exceed MAX_REACHABLE_CAPITAL
+ * (see params.ts), which keeps every output finite.
  */
 import { assertInRange } from '../../lib/params.ts';
 import { createRng } from '../../lib/random.ts';
 import { estimateProportion, quantileSorted, type ProportionEstimate } from '../../lib/stats.ts';
-import type { RuinParams } from './params.ts';
+import { maxSafeRounds, type RuinParams } from './params.ts';
 
 export const RUIN_FRACTION = 0.05;
 /** Full-resolution paths kept for drawing (futures #0 … #n-1). */
@@ -95,6 +97,8 @@ export function simulateRuin(input: RuinInput): RuinResult {
   assertInRange('fraction', fraction, 0, 1);
   assertInRange('rounds', rounds, 1, 100_000, true);
   assertInRange('futures', futures, 1, 1_000_000, true);
+  // Every path value is ≤ capital·(1 + fraction·gain)^rounds; keep that finite.
+  assertInRange('rounds', rounds, 1, maxSafeRounds(input));
 
   const rng = createRng(seed);
   const up = 1 + fraction * gain;

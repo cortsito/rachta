@@ -22,11 +22,10 @@ src/
     useSimulation.ts       hook: input → running/result/stale/error
     App.tsx                shell (skip link, header/nav, main, footer), lab switch, focus + title
     Landing.tsx            entry view
-    UnavailableLab.tsx     temporary view for labs without a screen (delete in phase two)
   features/<lab>/          streaks, bayes, ruin, compound-loss
     params.ts              schema: URL keys, bounds, steps, defaults, cross-field rules
     model.ts (+test)       pure kernel, exact formulas, typed input/result
-    <Lab>Lab.tsx           the screen (only streaks so far)
+    <Lab>Lab.tsx           the screen
     other .tsx/.ts/.css    feature-only visuals, interpretation copy, styles
   components/
     lab/                   lab contract: LabLayout, SimulationForm, ShareLink, useParamDraft
@@ -47,7 +46,7 @@ Dependency direction: `lib` imports nothing from the app. `features/*/model.ts` 
 - The address bar is the single source of application state. There is no other store.
 - No `lab` or an unknown `lab` means the landing view and serializes to `""`.
 - Parameter keys, order, bounds, step and default come from the lab's schema in `features/<lab>/params.ts`. Values are stored in **model units**: probabilities are fractions (`p=0.55`), counts are integers. `display: 'percent'` only affects form fields.
-- Parsing accepts plain decimals only (`/^-?\d+(\.\d+)?$/`). Anything else becomes the default. Numbers are clamped, snapped to the step grid from `min`, and rounded to the step's decimals. Then the schema's `constrain` applies cross-field rules (e.g. streak ≤ attempts). Unknown keys are dropped.
+- Parsing accepts plain decimals only (`/^-?\d+(\.\d+)?$/`). Anything else becomes the default. Numbers are clamped, snapped to the step grid from `min`, and rounded to the step's decimals. Then the schema's `constrain` applies cross-field rules (streak ≤ attempts; ruin `rounds` ≤ the overflow-safe limit below). Unknown keys are dropped.
 - Seeds match `/^[A-Za-z0-9_-]{1,32}$/`. A missing or invalid seed is replaced with `generateSeed()` (8 chars, Web Crypto) during canonicalization, never while rendering.
 - `canonicalizeLocation()` runs before the first render and on `popstate`. `navigate()` canonicalizes too, so components always see a canonical URL.
 - History: moving between views uses `push`. A new run in a view uses `replace`, so Back leaves the lab.
@@ -75,6 +74,8 @@ Dependency direction: `lib` imports nothing from the app. `features/*/model.ts` 
 
 Model definitions: the ruin lab exposes a fraction f of current capital each round, giving C·(1+f·gain) or C·(1−f·loss). In the compound-loss lab, `severity` is the **median** event loss (μ = ln severity) and `dispersion` is σ.
 
+Ruin overflow safety: capital is a plain float64 product, and no path can exceed capital·(1+f·gain)^rounds. When p > 0, `rounds` is therefore limited to `maxSafeRounds` = ⌊ln(10³⁰⁰ / capital) / ln(1+f·gain)⌋ (`MAX_REACHABLE_CAPITAL` = 10³⁰⁰, below `Number.MAX_VALUE` ≈ 1.8·10³⁰⁸ with room for rounding). This keeps paths, percentiles, medians and drawdowns finite. The schema lowers `rounds` to the largest multiple of 10 within the limit (never below 370 with the schema bounds), and the form shows that maximum. `simulateRuin` throws `RangeError` above it. `quantileSorted` and `mean` throw `RangeError` on non-finite data rather than return NaN or Infinity.
+
 ## Component contracts
 
 - **Lab screen** (`features/<lab>/<Lab>Lab.tsx`) receives `LabViewProps<L>` (`params`, `seed`, `shareUrl`, `onRun`). It owns `useParamDraft(schema, params)` for the form draft and `useSimulation(lab, {...params, seed})` for results. It renders exactly one `LabLayout`. `App.tsx`'s `LabView` switch is the only place screens are wired.
@@ -83,8 +84,8 @@ Model definitions: the ruin lab exposes a fraction f of current capital each rou
 - **RangeField** is the accessible control: a labelled number input with hint and error text, `aria-invalid`, and a Spanish custom validity message. The slider is `aria-hidden` and `tabIndex=-1`. `onChange` receives only valid, normalized model-unit values. Use `max` for cross-field bounds.
 - **MetricList** requires a `Provenance` on every metric: `exact` → "Exacto", `estimated` → "Estimado con N simulaciones", or `sample` → a stated single-run description. Format values with `lib/format.ts` (3 significant figures; `formatPercent` never rounds to 0 %/100 %).
 - **ChartFigure** gives each graphic a visible title, a results-specific text description (the text alternative), and an optional `DataTable` inside a disclosure. Its render prop provides `aria-labelledby`/`aria-describedby` for the `<svg role="img">`.
-- **Histogram** takes bins `{x0, x1, count, highlighted?}` (use `discrete` for integer data), `markers` (vertical lines) and a legend. Highlighted bars use a hatch pattern.
-- **LinePlot** takes series `{id, label, values, x?, variant: muted|primary|secondary|tertiary}`, `yScale: 'linear'|'log'` and `references` (horizontal lines). Series that share a label share one legend entry.
+- **Histogram** takes bins `{x0, x1, count, highlighted?, highlightedCount?}` (use `discrete` for integer data), `markers` (vertical lines) and a legend. Highlighted bars use a hatch pattern. `highlightedCount` hatches only that many of a bin's observations, from the baseline up; compound loss uses it so hatching equals the strict `> threshold` rule.
+- **LinePlot** takes series `{id, label, values, x?, variant: muted|primary|secondary|tertiary, fitDomain?}`, `yScale: 'linear'|'log'` and `references` (horizontal lines). Series that share a label share one legend entry. The y domain covers the fitting series and the references (a log axis spans at least one decade). Series with `fitDomain: false` (the ruin sample paths) are clipped to the plot, and a visible note, linked with `aria-describedby`, says how many are clipped. Non-finite values are skipped, and on a log axis non-positive values are pinned to the floor.
 - Charts measure their container (`useChartWidth`) and draw in CSS pixels, so text stays legible on phones.
 - Feature-only visuals (e.g. `features/streaks/RunSequence.tsx`) stay in the feature. Promote a piece to `components/` only once a second lab needs it.
 

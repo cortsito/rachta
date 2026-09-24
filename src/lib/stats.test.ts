@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   binEqualWidth,
   binsFromCounts,
+  countAtMost,
   estimateProportion,
   mean,
   median,
@@ -31,6 +32,21 @@ describe('mean and quantiles', () => {
     expect(mean([])).toBeNaN();
     expect(quantileSorted([], 0.5)).toBeNaN();
     expect(quantileFromCounts([0, 0], 0.5)).toBeNaN();
+  });
+
+  it('rejects non-finite data instead of returning NaN or Infinity as an estimate', () => {
+    expect(() => quantileSorted([1, 2, Infinity], 0.5)).toThrow(RangeError);
+    expect(() => quantileSorted([Infinity, Infinity], 1)).toThrow(RangeError);
+    expect(() => quantileSorted(Float64Array.from([1, Number.NaN]).sort(), 0)).toThrow(RangeError);
+    expect(() => mean([1, Number.NaN])).toThrow(RangeError);
+    expect(() => mean([Number.MAX_VALUE, Number.MAX_VALUE])).toThrow(RangeError);
+  });
+
+  it('counts sorted values at or below a threshold', () => {
+    expect(countAtMost([0, 0, 1, 2, 2, 3], 2)).toBe(5);
+    expect(countAtMost([0, 0, 1], 0)).toBe(2);
+    expect(countAtMost([1, 2], 0.5)).toBe(0);
+    expect(countAtMost([], 1)).toBe(0);
   });
 
   it('computes the same quantiles from a frequency table as from raw data', () => {

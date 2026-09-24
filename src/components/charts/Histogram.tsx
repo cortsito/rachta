@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { Fragment, useId } from 'react';
 import type { ChartLabelling } from './ChartFigure.tsx';
 import { Legend, PatternDefs } from './Legend.tsx';
 import { linearScale, niceStep, niceTicks, niceUpperBound } from './scale.ts';
@@ -11,6 +11,12 @@ export interface HistogramBin {
   count: number;
   /** Drawn with a hatch pattern (not only a different colour). */
   highlighted?: boolean;
+  /**
+   * How many of `count` belong to the highlighted category; that part is
+   * hatched from the baseline up. Overrides `highlighted`. Use it when a bin
+   * can hold both categories, so the hatching stays exact.
+   */
+  highlightedCount?: number;
 }
 
 /** Vertical reference line at an x value, labelled on the chart. */
@@ -97,17 +103,30 @@ export function Histogram({
             const left = x(bin.x0);
             const full = Math.max(0, x(bin.x1) - left);
             const gap = full > 4 ? 1 : 0;
+            const hatched = Math.min(bin.count, bin.highlightedCount ?? (bin.highlighted ? bin.count : 0));
+            const whole = hatched > 0 && hatched === bin.count;
+            const bar = { x: left + gap / 2, width: Math.max(1, full - gap) };
             return (
-              <rect
-                key={i}
-                className="chart__bar"
-                data-highlighted={bin.highlighted ? '' : undefined}
-                fill={bin.highlighted ? `url(#${patternId})` : undefined}
-                x={left + gap / 2}
-                y={y(bin.count)}
-                width={Math.max(1, full - gap)}
-                height={Math.max(0, plotBottom - y(bin.count))}
-              />
+              <Fragment key={i}>
+                <rect
+                  className="chart__bar"
+                  data-highlighted={whole ? '' : undefined}
+                  fill={whole ? `url(#${patternId})` : undefined}
+                  {...bar}
+                  y={y(bin.count)}
+                  height={Math.max(0, plotBottom - y(bin.count))}
+                />
+                {hatched > 0 && !whole && (
+                  <rect
+                    className="chart__bar"
+                    data-highlighted=""
+                    fill={`url(#${patternId})`}
+                    {...bar}
+                    y={y(hatched)}
+                    height={Math.max(0, plotBottom - y(hatched))}
+                  />
+                )}
+              </Fragment>
             );
           })}
         </g>

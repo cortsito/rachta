@@ -25,11 +25,15 @@ function unsign(value: number): number {
   return Object.is(value, -0) ? 0 : value;
 }
 
+/** From here on, grouped digits would be mostly padding zeros (and may run to 300+ characters). */
+const SCIENTIFIC_FROM = 1e15;
+
 export function formatNumber(value: number, significantDigits = 3): string {
   if (Number.isNaN(value)) return MISSING;
   if (!Number.isFinite(value)) return value > 0 ? '∞' : '−∞';
   const rounded = unsign(Number(value.toPrecision(significantDigits)));
-  return formatter({ maximumSignificantDigits: significantDigits }).format(rounded);
+  const notation = Math.abs(rounded) >= SCIENTIFIC_FROM ? 'scientific' : 'standard';
+  return formatter({ maximumSignificantDigits: significantDigits, notation }).format(rounded);
 }
 
 export function formatInteger(value: number): string {

@@ -1,5 +1,5 @@
 import { ChartFigure } from '../../components/charts/ChartFigure.tsx';
-import { Histogram, type HistogramBin } from '../../components/charts/Histogram.tsx';
+import { Histogram } from '../../components/charts/Histogram.tsx';
 import { LabLayout } from '../../components/lab/LabLayout.tsx';
 import { SimulationForm } from '../../components/lab/SimulationForm.tsx';
 import { useParamDraft } from '../../components/lab/useParamDraft.ts';
@@ -9,7 +9,7 @@ import { labInfo, type LabViewProps } from '../../app/labs.ts';
 import { useSimulation } from '../../app/useSimulation.ts';
 import { formatInteger, formatInterval, formatNumber, formatPercent, formatSampleCount } from '../../lib/format.ts';
 import { generateSeed } from '../../lib/random.ts';
-import { binEqualWidth } from '../../lib/stats.ts';
+import { lossHistogram } from './histogram.ts';
 import { interpretCompoundLoss } from './interpretation.ts';
 import type { CompoundLossResult } from './model.ts';
 import { compoundLossSchema } from './params.ts';
@@ -66,16 +66,14 @@ function Results({ result }: { result: CompoundLossResult }) {
   const { threshold, futures } = result.input;
   const { sortedTotals, mean, median, p90, p99 } = result;
   const upper = Math.max(p99, threshold);
-  const binned = binEqualWidth(sortedTotals, 0, upper, BIN_COUNT);
-  const bins: HistogramBin[] = binned.bins.map((bin) => ({ ...bin, highlighted: bin.x0 >= threshold }));
+  const { bins, overflow } = lossHistogram(sortedTotals, threshold, upper, BIN_COUNT);
 
   const description =
     `Distribución de la pérdida total en ${formatInteger(futures)} periodos simulados, hasta ${formatNumber(upper)}. ` +
-    `La media es ${formatNumber(mean)}, la mediana ${formatNumber(median)} y el percentil 90 ${formatNumber(p90)}. Las ` +
-    `barras rayadas superan el umbral de ${formatNumber(threshold)}.` +
-    (binned.overflow > 0
-      ? ` ${formatInteger(binned.overflow)} futuros superaron ${formatNumber(upper)} y no se ven en detalle.`
-      : '');
+    `La media es ${formatNumber(mean)}, la mediana ${formatNumber(median)} y el percentil 90 ${formatNumber(p90)}. La ` +
+    `parte rayada de cada barra son los periodos con una pérdida mayor que el umbral de ${formatNumber(threshold)}; ` +
+    `una barra que contiene el umbral solo está rayada en parte.` +
+    (overflow > 0 ? ` ${formatInteger(overflow)} futuros superaron ${formatNumber(upper)} y no se ven en detalle.` : '');
 
   return (
     <>
@@ -90,7 +88,7 @@ function Results({ result }: { result: CompoundLossResult }) {
         description={description}
         table={{
           caption: 'Periodos según su pérdida total',
-          columns: ['Rango de pérdida', 'Periodos', 'Proporción'],
+          columns: ['Rango de pérdida', 'Periodos', 'Proporción', `Periodos por encima de ${formatNumber(threshold)}`],
           rows: [
             ...bins
               .filter((bin) => bin.count > 0)
@@ -98,9 +96,17 @@ function Results({ result }: { result: CompoundLossResult }) {
                 `${formatNumber(bin.x0)} – ${formatNumber(bin.x1)}`,
                 formatInteger(bin.count),
                 formatPercent(bin.count / futures),
+                formatInteger(bin.highlightedCount ?? 0),
               ]),
-            ...(binned.overflow > 0
-              ? [[`Más de ${formatNumber(upper)}`, formatInteger(binned.overflow), formatPercent(binned.overflow / futures)]]
+            ...(overflow > 0
+              ? [
+                  [
+                    `Más de ${formatNumber(upper)}`,
+                    formatInteger(overflow),
+                    formatPercent(overflow / futures),
+                    formatInteger(overflow),
+                  ],
+                ]
               : []),
           ],
         }}
@@ -117,7 +123,7 @@ function Results({ result }: { result: CompoundLossResult }) {
               { value: p90, label: `P90: ${formatNumber(p90)}` },
               { value: mean, label: `Media: ${formatNumber(mean)}` },
             ]}
-            legend={{ base: `Bajo el umbral`, highlighted: `${formatNumber(threshold)} o más` }}
+            legend={{ base: `${formatNumber(threshold)} o menos`, highlighted: `Más de ${formatNumber(threshold)}` }}
           />
         )}
       </ChartFigure>
@@ -198,8 +204,8 @@ export function CompoundLossLab({ params, seed, shareUrl, onRun }: LabViewProps<
       howToRead={
         <ul>
           <li>
-            El histograma reúne todos los periodos simulados según su pérdida total. Las barras rayadas superan el
-            umbral elegido.
+            El histograma reúne todos los periodos simulados según su pérdida total. La parte rayada de cada barra
+            son los periodos cuya pérdida es mayor que el umbral elegido, igual que en la probabilidad de superarlo.
           </li>
           <li>Las líneas verticales marcan la mediana, el percentil 90 y la media: cuanto más lejos esté la media de la mediana, más marcada es la asimetría.</li>
           <li>

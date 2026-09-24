@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { MetricList } from '../ui/MetricList.tsx';
 import { ChartFigure } from './ChartFigure.tsx';
 import { Histogram } from './Histogram.tsx';
-import { LinePlot } from './LinePlot.tsx';
+import { LinePlot, lineYDomain } from './LinePlot.tsx';
 import { linearScale, logScale, logTicks, niceTicks, niceUpperBound } from './scale.ts';
 
 describe('scales and ticks', () => {
@@ -15,6 +15,7 @@ describe('scales and ticks', () => {
     const y = logScale([1, 1000], [300, 0]);
     expect(y(10)).toBeCloseTo(200, 10);
     expect(y(0)).toBe(300); // pinned to the floor
+    expect(y(0.1)).toBeCloseTo(400, 10); // positive values are not clamped (they are clipped by the plot)
   });
 
   it('produces round ticks without float noise', () => {
@@ -25,6 +26,9 @@ describe('scales and ticks', () => {
     expect(niceUpperBound(0)).toBe(1);
     expect(logTicks(0.5, 20000)).toEqual([1, 10, 100, 1000, 10000]);
     expect(logTicks(3, 40)).toEqual([5, 10, 20]);
+    // Wide domains keep a legible number of ticks.
+    expect(logTicks(1, 1e17)).toEqual([1, 1e3, 1e6, 1e9, 1e12, 1e15]);
+    expect(logTicks(50, 1e300).length).toBeLessThanOrEqual(8);
   });
 });
 
@@ -67,6 +71,30 @@ describe('accessible chart markup', () => {
     expect(html).toContain('<th scope="row">0</th>');
   });
 
+  it('hatches only the highlighted part of a mixed bin, from the baseline', () => {
+    const html = renderToStaticMarkup(
+      <Histogram
+        labelling={{ 'aria-labelledby': 't', 'aria-describedby': 'd' }}
+        bins={[
+          { x0: 0, x1: 5, count: 4, highlightedCount: 0 },
+          { x0: 5, x1: 10, count: 4, highlightedCount: 1 },
+          { x0: 10, x1: 15, count: 4, highlightedCount: 4 },
+        ]}
+        xLabel="Pérdida"
+        yLabel="Periodos"
+        formatX={String}
+      />,
+    );
+    const rects = [...html.matchAll(/<rect class="chart__bar"([^>]*)>/g)].map((m) => m[1]!);
+    expect(rects).toHaveLength(4); // plain, plain + partial hatch, fully hatched
+    const hatched = rects.filter((r) => r.includes('data-highlighted'));
+    expect(hatched).toHaveLength(2);
+    const height = (r: string) => Number(/height="([^"]+)"/.exec(r)?.[1]);
+    // The partial hatch is a quarter of its bar; the whole-bin hatch is the full bar.
+    expect(height(hatched[0]!) * 4).toBeCloseTo(height(rects[1]!), 6);
+    expect(height(hatched[1]!)).toBeCloseTo(height(rects[1]!), 6);
+  });
+
   it('draws line series with a legend entry per label', () => {
     const html = renderToStaticMarkup(
       <LinePlot
@@ -88,6 +116,28 @@ describe('accessible chart markup', () => {
     expect(html.match(/class="chart__legend-item"/g)).toHaveLength(2);
     expect(html).toContain('Capital (escala logarítmica)');
     expect(html).not.toContain('NaN');
+    expect(html).not.toContain('chart__note');
+  });
+
+  it('skips non-finite values instead of writing them into path data or the domain', () => {
+    const html = renderToStaticMarkup(
+      <LinePlot
+        labelling={{ 'aria-labelledby': 't', 'aria-describedby': 'd' }}
+        series={[
+          { id: 'a', label: 'A', values: [100, Infinity, 50, Number.NaN, 25], variant: 'primary' },
+          { id: 'b', label: 'B', values: [Number.NaN, 10], x: [0, 4], variant: 'muted' },
+        ]}
+        xLabel="Ronda"
+        yLabel="Capital"
+        formatX={String}
+        formatY={String}
+        yScale="log"
+      />,
+    );
+    expect(html).not.toMatch(/NaN|Infinity/);
+    const d = /data-variant="primary" d="([^"]+)"/.exec(html)?.[1];
+    expect(d?.match(/M/g)).toHaveLength(3); // the line breaks at each gap
+    expect(lineYDomain([{ id: 'a', label: 'A', values: [Infinity, 5, 500], variant: 'primary' }], [], 'log')).toEqual([5, 500]);
   });
 });
 

@@ -9,9 +9,10 @@ import { labInfo, type LabViewProps } from '../../app/labs.ts';
 import { useSimulation } from '../../app/useSimulation.ts';
 import { formatInteger, formatInterval, formatNumber, formatPercent, formatSampleCount } from '../../lib/format.ts';
 import { generateSeed } from '../../lib/random.ts';
+import { ruinChart } from './chart.ts';
 import { interpretRuin } from './interpretation.ts';
 import { RUIN_FRACTION, type RuinResult } from './model.ts';
-import { ruinSchema } from './params.ts';
+import { MAX_REACHABLE_CAPITAL, roundsLimit, ruinSchema } from './params.ts';
 
 const { specs } = ruinSchema;
 
@@ -57,14 +58,16 @@ function buildMetrics(result: RuinResult): Metric[] {
 
 function Results({ result }: { result: RuinResult }) {
   const { capital, futures } = result.input;
-  const { checkpoints, bands, ruinLevel, samplePaths } = result;
+  const { checkpoints, bands, samplePaths } = result;
   const [p10, p50, p90] = bands;
+  const { series, references } = ruinChart(result);
 
   const description =
     `${formatInteger(samplePaths.length)} futuros de muestra (líneas finas) junto a los percentiles 10, 50 y 90 del ` +
     `capital en ${formatInteger(checkpoints.length)} puntos de control, sobre ${formatInteger(futures)} futuros. El ` +
     `capital final típico (mediana) es ${formatNumber(result.medianFinalCapital)}, frente a un capital inicial de ` +
-    `${formatNumber(capital)}.`;
+    `${formatNumber(capital)}. El eje vertical se ajusta a los percentiles y a las líneas de referencia; los futuros ` +
+    `de muestra que se salen de ese rango aparecen recortados.`;
 
   return (
     <>
@@ -96,21 +99,8 @@ function Results({ result }: { result: RuinResult }) {
             yLabel="Capital"
             formatX={formatInteger}
             formatY={formatNumber}
-            references={[
-              { value: capital, label: `Capital inicial: ${formatNumber(capital)}` },
-              { value: ruinLevel, label: `Ruina: ${formatPercent(RUIN_FRACTION)} del capital inicial` },
-            ]}
-            series={[
-              ...samplePaths.map((path, i) => ({
-                id: `sample-${i}`,
-                label: 'Futuros de muestra',
-                values: path,
-                variant: 'muted' as const,
-              })),
-              { id: 'p10', label: 'Percentiles 10–90', values: p10!.values, x: checkpoints, variant: 'secondary' as const },
-              { id: 'p90', label: 'Percentiles 10–90', values: p90!.values, x: checkpoints, variant: 'secondary' as const },
-              { id: 'p50', label: 'Mediana (P50)', values: p50!.values, x: checkpoints, variant: 'primary' as const },
-            ]}
+            references={references}
+            series={series}
           />
         )}
       </ChartFigure>
@@ -122,6 +112,7 @@ export function RuinLab({ params, seed, shareUrl, onRun }: LabViewProps<'ruin'>)
   const [draft, update] = useParamDraft(ruinSchema, params);
   const simulation = useSimulation('ruin', { ...params, seed });
   const { result } = simulation;
+  const maxRounds = roundsLimit(draft);
 
   const status = simulation.running
     ? `Simulando ${formatSampleCount(params.futures)}…`
@@ -189,7 +180,15 @@ export function RuinLab({ params, seed, shareUrl, onRun }: LabViewProps<'ruin'>)
           <RangeField
             name="rounds"
             label="Rondas por futuro"
+            {...(maxRounds < specs.rounds.max
+              ? {
+                  hint:
+                    `Con estos valores, el máximo es ${formatInteger(maxRounds)}: con más rondas, el capital podría ` +
+                    `superar ${formatNumber(MAX_REACHABLE_CAPITAL)} y el cálculo dejaría de dar resultados válidos.`,
+                }
+              : {})}
             spec={specs.rounds}
+            max={maxRounds}
             value={draft.rounds}
             onChange={(value) => update('rounds', value)}
           />

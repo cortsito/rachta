@@ -28,6 +28,13 @@ describe('query-state contract', () => {
     expect(state).toMatchObject({ lab: 'streaks', params: { attempts: 20, streak: 20 } });
   });
 
+  it('lowers ruin rounds to the overflow-safe limit and leaves safe scenarios alone', () => {
+    const unsafe = '?lab=ruin&capital=1000&p=1&gain=5&loss=1&fraction=1&rounds=1000&futures=100&seed=abc';
+    expect(canonicalizeQuery(unsafe, fixedSeed)).toBe(unsafe.replace('rounds=1000', 'rounds=380'));
+    const safe = '?lab=ruin&capital=1000&p=0.6&gain=1&loss=1&fraction=0.2&rounds=1000&futures=2000&seed=abc';
+    expect(canonicalizeQuery(safe, fixedSeed)).toBe(safe);
+  });
+
   it.each(LAB_IDS)('round-trips the canonical query of %s', (lab) => {
     const canonical = defaultLabQuery(lab, 'seed42');
     expect(canonical.startsWith(`?lab=${lab}&`)).toBe(true);

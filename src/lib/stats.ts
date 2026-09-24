@@ -2,11 +2,18 @@
 
 export type Numbers = ArrayLike<number>;
 
+/** Throws on NaN or ±Infinity: a non-finite statistic must never pass for an estimate. */
+function assertFinite(name: string, value: number): number {
+  if (!Number.isFinite(value)) throw new RangeError(`${name} requires finite values; got ${value}`);
+  return value;
+}
+
 export function mean(values: Numbers): number {
   if (values.length === 0) return Number.NaN;
   let sum = 0;
   for (let i = 0; i < values.length; i++) sum += values[i]!;
-  return sum / values.length;
+  // Any NaN/±Infinity input, or an overflowing sum, leaves `sum` non-finite.
+  return assertFinite('mean', sum) / values.length;
 }
 
 /** Ascending copy as a Float64Array (numeric sort, unlike Array#sort's default). */
@@ -17,10 +24,12 @@ export function sortedCopy(values: Numbers): Float64Array {
 /**
  * Quantile of already-sorted data with linear interpolation between order
  * statistics (Hyndman–Fan type 7, the default in R and NumPy).
+ * Throws a RangeError if any value is NaN or ±Infinity.
  */
 export function quantileSorted(sorted: Numbers, q: number): number {
   const n = sorted.length;
   if (n === 0) return Number.NaN;
+  for (let i = 0; i < n; i++) assertFinite('quantileSorted', sorted[i]!);
   const clampedQ = Math.min(1, Math.max(0, q));
   const position = (n - 1) * clampedQ;
   const lower = Math.floor(position);
@@ -28,6 +37,18 @@ export function quantileSorted(sorted: Numbers, q: number): number {
   const weight = position - lower;
   const low = sorted[lower]!;
   return weight === 0 ? low : low + (sorted[upper]! - low) * weight;
+}
+
+/** Number of values ≤ `threshold` in ascending data (binary search). */
+export function countAtMost(sorted: Numbers, threshold: number): number {
+  let low = 0;
+  let high = sorted.length;
+  while (low < high) {
+    const mid = (low + high) >>> 1;
+    if (sorted[mid]! <= threshold) low = mid + 1;
+    else high = mid;
+  }
+  return low;
 }
 
 export function quantiles(values: Numbers, qs: readonly number[]): number[] {

@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import type { ChartLabelling } from './ChartFigure.tsx';
 import type { ChartMarker } from './Histogram.tsx';
 import { Legend, type LegendItem } from './Legend.tsx';
@@ -15,6 +16,12 @@ export interface LineSeries {
   x?: ArrayLike<number>;
   /** muted = many thin background lines; the others differ by width and dash pattern. */
   variant: LineVariant;
+  /**
+   * Whether this series sets the y domain (default true). Use false for
+   * context lines, such as sample paths, that must not squeeze the main
+   * series: they are clipped at the plot edges and the clipping is disclosed.
+   */
+  fitDomain?: boolean;
 }
 
 export interface LinePlotProps {
@@ -24,7 +31,12 @@ export interface LinePlotProps {
   yLabel: string;
   formatX: (value: number) => string;
   formatY: (value: number) => string;
-  /** 'log' suits multiplicative quantities such as capital. Non-positive values are pinned to the axis floor. */
+  /**
+   * 'log' suits multiplicative quantities such as capital. The domain covers
+   * every finite value of the fitting series and every reference, spanning at
+   * least one decade. Non-positive values have no logarithm and are pinned to
+   * the axis floor.
+   */
   yScale?: 'linear' | 'log';
   /** Horizontal reference lines (e.g. starting capital, ruin level). */
   references?: readonly ChartMarker[];
@@ -32,8 +44,6 @@ export interface LinePlotProps {
 }
 
 const MARGIN = { top: 28, right: 16, bottom: 48, left: 64 };
-/** Lowest decade shown on a log axis, relative to the maximum. */
-const LOG_FLOOR_RATIO = 1e-6;
 
 function xAt(series: LineSeries, i: number): number {
   return series.x ? series.x[i]! : i;
@@ -46,11 +56,14 @@ function extent(series: readonly LineSeries[], references: readonly ChartMarker[
   let yMax = -Infinity;
   let yMinPositive = Infinity;
   for (const s of series) {
+    const fits = s.fitDomain !== false;
     for (let i = 0; i < s.values.length; i++) {
       const xv = xAt(s, i);
       const yv = s.values[i]!;
+      if (!Number.isFinite(xv) || !Number.isFinite(yv)) continue;
       if (xv < xMin) xMin = xv;
       if (xv > xMax) xMax = xv;
+      if (!fits) continue;
       if (yv < yMin) yMin = yv;
       if (yv > yMax) yMax = yv;
       if (yv > 0 && yv < yMinPositive) yMinPositive = yv;
@@ -64,10 +77,67 @@ function extent(series: readonly LineSeries[], references: readonly ChartMarker[
   return { xMin, xMax, yMin, yMax, yMinPositive };
 }
 
+/** y domain of the plot, from fitting series and references only. */
+export function lineYDomain(
+  series: readonly LineSeries[],
+  references: readonly ChartMarker[],
+  yScale: 'linear' | 'log',
+): [number, number] {
+  const bounds = extent(series, references);
+  if (yScale === 'log') {
+    const top = bounds.yMax > 0 ? bounds.yMax : 1;
+    return [Math.min(bounds.yMinPositive, top / 10), top];
+  }
+  const low = Number.isFinite(bounds.yMin) ? Math.min(0, bounds.yMin) : 0;
+  const high = Number.isFinite(bounds.yMax) && bounds.yMax > low ? bounds.yMax : low + 1;
+  return [low, high];
+}
+
+export interface ClippedSeries {
+  label: string;
+  /** Series with this label that leave the y domain somewhere. */
+  clipped: number;
+  total: number;
+}
+
+/** Non-fitting series, grouped by label, that have finite values outside the y domain. */
+export function clippedSeries(
+  series: readonly LineSeries[],
+  [low, high]: readonly [number, number],
+  yScale: 'linear' | 'log',
+): ClippedSeries[] {
+  const groups: ClippedSeries[] = [];
+  for (const s of series) {
+    if (s.fitDomain !== false) continue;
+    let group = groups.find((g) => g.label === s.label);
+    if (!group) groups.push((group = { label: s.label, clipped: 0, total: 0 }));
+    group.total++;
+    for (let i = 0; i < s.values.length; i++) {
+      const v = s.values[i]!;
+      // On a log axis, non-positive values are pinned to the floor, not clipped.
+      const below = yScale === 'log' ? v > 0 && v < low : v < low;
+      if (Number.isFinite(v) && (below || v > high)) {
+        group.clipped++;
+        break;
+      }
+    }
+  }
+  return groups.filter((g) => g.clipped > 0);
+}
+
+/** SVG path data; non-finite points are skipped and break the line. */
 function pathData(series: LineSeries, x: Scale, y: Scale): string {
   let d = '';
+  let pen = 'M';
   for (let i = 0; i < series.values.length; i++) {
-    d += `${i === 0 ? 'M' : 'L'}${x(xAt(series, i)).toFixed(1)} ${y(series.values[i]!).toFixed(1)}`;
+    const xv = xAt(series, i);
+    const yv = series.values[i]!;
+    if (!Number.isFinite(xv) || !Number.isFinite(yv)) {
+      pen = 'M';
+      continue;
+    }
+    d += `${pen}${x(xv).toFixed(1)} ${y(yv).toFixed(1)}`;
+    pen = 'L';
   }
   return d;
 }
@@ -84,25 +154,19 @@ export function LinePlot({
   height = 300,
 }: LinePlotProps) {
   const [ref, width] = useChartWidth<HTMLDivElement>();
+  const id = useId();
+  const clipId = `${id}-clip`;
+  const noteId = `${id}-note`;
   const plotRight = width - MARGIN.right;
   const plotBottom = height - MARGIN.bottom;
   const bounds = extent(series, references);
   const xDomain: [number, number] = Number.isFinite(bounds.xMin) ? [bounds.xMin, bounds.xMax] : [0, 1];
   const x = linearScale(xDomain, [MARGIN.left, plotRight]);
 
-  let y: Scale;
-  let yTicks: number[];
-  if (yScale === 'log') {
-    const top = bounds.yMax > 0 ? bounds.yMax : 1;
-    const floor = Math.max(Math.min(bounds.yMinPositive, top / 10), top * LOG_FLOOR_RATIO);
-    y = logScale([floor, top], [plotBottom, MARGIN.top]);
-    yTicks = logTicks(floor, top);
-  } else {
-    const low = Number.isFinite(bounds.yMin) ? Math.min(0, bounds.yMin) : 0;
-    const high = Number.isFinite(bounds.yMax) && bounds.yMax > low ? bounds.yMax : low + 1;
-    y = linearScale([low, high], [plotBottom, MARGIN.top]);
-    yTicks = niceTicks(low, high, 5);
-  }
+  const yDomain = lineYDomain(series, references, yScale);
+  const y = (yScale === 'log' ? logScale : linearScale)(yDomain, [plotBottom, MARGIN.top]);
+  const yTicks = yScale === 'log' ? logTicks(...yDomain) : niceTicks(...yDomain, 5);
+  const clipped = clippedSeries(series, yDomain, yScale);
   const xTicks = niceTicks(xDomain[0], xDomain[1], Math.max(2, Math.floor((plotRight - MARGIN.left) / 64)));
 
   const legendItems: LegendItem[] = [];
@@ -122,7 +186,13 @@ export function LinePlot({
         viewBox={`0 0 ${width} ${height}`}
         focusable="false"
         {...labelling}
+        aria-describedby={clipped.length > 0 ? `${labelling['aria-describedby']} ${noteId}` : labelling['aria-describedby']}
       >
+        <defs>
+          <clipPath id={clipId}>
+            <rect x={MARGIN.left} y={MARGIN.top} width={Math.max(0, plotRight - MARGIN.left)} height={plotBottom - MARGIN.top} />
+          </clipPath>
+        </defs>
         <g className="chart__grid" aria-hidden="true">
           {yTicks.map((tick) => (
             <line key={tick} x1={MARGIN.left} x2={plotRight} y1={y(tick)} y2={y(tick)} />
@@ -138,7 +208,7 @@ export function LinePlot({
             </g>
           ))}
         </g>
-        <g className="chart__lines">
+        <g className="chart__lines" clipPath={`url(#${clipId})`}>
           {ordered.map((s) => (
             <path key={s.id} className="chart__line" data-variant={s.variant} d={pathData(s, x, y)} />
           ))}
@@ -172,6 +242,16 @@ export function LinePlot({
           </text>
         </g>
       </svg>
+      {clipped.length > 0 && (
+        <p className="chart__note" id={noteId}>
+          {clipped
+            .map(
+              ({ label, clipped: count, total }) =>
+                `${count} de ${total} líneas de «${label}» salen del rango vertical y se ven recortadas en el borde del gráfico.`,
+            )
+            .join(' ')}
+        </p>
+      )}
       {legendItems.length > 0 && <Legend items={legendItems} />}
     </div>
   );

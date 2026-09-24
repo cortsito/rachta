@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { normalizeParams } from '../../lib/params.ts';
 import { quantileSorted, sortedCopy } from '../../lib/stats.ts';
 import {
   BAND_LEVELS,
@@ -10,6 +11,7 @@ import {
   simulateRuin,
   type RuinInput,
 } from './model.ts';
+import { MAX_REACHABLE_CAPITAL, maxSafeRounds, roundsLimit, ruinSchema } from './params.ts';
 
 const base: RuinInput = {
   capital: 1000,
@@ -121,5 +123,65 @@ describe('simulateRuin', () => {
     expect(() => simulateRuin({ ...base, loss: 1.5 })).toThrow(RangeError);
     expect(() => simulateRuin({ ...base, capital: 0 })).toThrow(RangeError);
     expect(() => simulateRuin({ ...base, rounds: 0 })).toThrow(RangeError);
+  });
+});
+
+describe('numerical safety', () => {
+  const extreme = { capital: 1000, p: 1, gain: 5, loss: 1, fraction: 1, rounds: 1000, futures: 100, seed: 'abc' };
+  const highGrowth = { capital: 1000, p: 0.55, gain: 5, loss: 0.5, fraction: 1, rounds: 1000, futures: 2000, seed: 'abc' };
+
+  function expectFiniteResult(result: ReturnType<typeof simulateRuin>) {
+    for (const path of result.samplePaths) expect(path.every(Number.isFinite)).toBe(true);
+    for (const band of result.bands) expect(band.values.every(Number.isFinite)).toBe(true);
+    expect(Number.isFinite(result.medianFinalCapital)).toBe(true);
+    expect(Number.isFinite(result.medianMaxDrawdown)).toBe(true);
+    expect(Number.isFinite(result.exact.expectedMultiplier)).toBe(true);
+  }
+
+  it('derives the round limit from capital · (1 + fraction · gain)^rounds ≤ MAX_REACHABLE_CAPITAL', () => {
+    const limit = maxSafeRounds(extreme);
+    expect(limit).toBe(Math.floor(Math.log(MAX_REACHABLE_CAPITAL / 1000) / Math.log(6)));
+    expect(1000 * 6 ** limit).toBeLessThanOrEqual(MAX_REACHABLE_CAPITAL);
+    expect(1000 * 6 ** (limit + 1)).toBeGreaterThan(MAX_REACHABLE_CAPITAL);
+    // Nothing can grow when no round is favourable.
+    expect(maxSafeRounds({ ...extreme, p: 0 })).toBe(Infinity);
+  });
+
+  it('keeps the whole supported parameter space within the limit after the schema constraint', () => {
+    const { specs } = ruinSchema;
+    // Worst case of the schema: largest capital and largest growth factor.
+    const worst = normalizeParams(ruinSchema, { capital: specs.capital.max, p: 1, gain: specs.gain.max, fraction: 1, rounds: specs.rounds.max });
+    expect(worst.rounds).toBe(roundsLimit(worst));
+    expect(worst.rounds).toBeGreaterThanOrEqual(specs.rounds.min);
+    expect(worst.rounds % specs.rounds.step).toBe(0);
+    expect(worst.capital * (1 + worst.fraction * worst.gain) ** worst.rounds).toBeLessThanOrEqual(MAX_REACHABLE_CAPITAL);
+    // Default-like scenarios are untouched.
+    expect(normalizeParams(ruinSchema, { ...base, rounds: 1000 }).rounds).toBe(1000);
+    expect(normalizeParams(ruinSchema, { ...extreme, p: 0 }).rounds).toBe(1000);
+  });
+
+  it.each([
+    ['certain growth with full exposure', extreme],
+    ['seeded high growth', highGrowth],
+  ])('constrains %s to finite, meaningful output', (_, raw) => {
+    const params = normalizeParams(ruinSchema, raw);
+    expect(params.rounds).toBe(380);
+    const result = simulateRuin({ ...params, seed: raw.seed });
+    expectFiniteResult(result);
+    expect(result.medianFinalCapital).toBeGreaterThan(raw.capital);
+  });
+
+  it('computes the certain-growth case exactly within the limit', () => {
+    const result = simulateRuin({ ...normalizeParams(ruinSchema, extreme), seed: 'abc' });
+    expect(result.medianFinalCapital / (1000 * 6 ** 380)).toBeCloseTo(1, 10);
+    expect(result.medianMaxDrawdown).toBe(0);
+    expect(result.ruined.successes).toBe(0);
+  });
+
+  it('rejects inputs whose paths could overflow instead of returning Infinity or NaN', () => {
+    expect(() => simulateRuin(extreme)).toThrow(RangeError);
+    expect(() => simulateRuin(highGrowth)).toThrow(RangeError);
+    expect(() => simulateRuin({ ...base, gain: 1000, fraction: 1, rounds: 200 })).toThrow(RangeError);
+    expect(() => simulateRuin({ ...base, capital: Number.MAX_VALUE })).toThrow(RangeError);
   });
 });

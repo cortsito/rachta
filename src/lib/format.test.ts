@@ -43,6 +43,13 @@ describe('formatNumber and formatInteger', () => {
     expect(formatNumber(Number.NaN)).toBe('—');
   });
 
+  it('switches to scientific notation for very large magnitudes', () => {
+    expect(plain(formatNumber(999_000_000_000_000))).toBe('999.000.000.000.000');
+    expect(formatNumber(1.2345e15)).toBe('1,23E15');
+    expect(formatNumber(2.757e294)).toBe('2,76E294');
+    expect(formatNumber(-1e20)).toBe('-1E20');
+  });
+
   it('formats counts without decimals', () => {
     expect(plain(formatInteger(10000))).toBe('10.000');
     expect(plain(formatInteger(2.6))).toBe('3');
