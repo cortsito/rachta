@@ -1,0 +1,9 @@
+node_modules
+dist
+*.local
+.vite
+
+# AI-assistant working files: not part of the shipped product
+CLAUDE.md
+PROGRESS.md
+.claude/

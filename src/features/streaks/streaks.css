@@ -1,0 +1,18 @@
+@layer components {
+  .run-sequence__cell {
+    stroke: var(--chart-ink);
+    stroke-width: 1;
+  }
+
+  .run-sequence__cell[data-outcome='success'] {
+    fill: var(--chart-ink);
+  }
+
+  .run-sequence__cell[data-outcome='failure']:not([data-streak]) {
+    fill: var(--chart-background);
+  }
+
+  .run-sequence__cell[data-streak] {
+    stroke-width: 2;
+  }
+}

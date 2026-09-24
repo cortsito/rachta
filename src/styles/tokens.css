@@ -1,0 +1,45 @@
+/*
+ * Structural tokens only. Colours are CSS system colours so the interface
+ * stays neutral and follows the user's light/dark preference. A future visual
+ * design replaces this file (and may add more tokens) without touching markup.
+ *
+ * Breakpoints cannot be custom properties inside @media; the single layout
+ * breakpoint is 48rem (see layout.css).
+ */
+@layer tokens {
+  :root {
+    color-scheme: light dark;
+
+    --font-body: system-ui, sans-serif;
+    --font-mono: ui-monospace, monospace;
+    --line-height: 1.5;
+
+    --space-1: 0.25rem;
+    --space-2: 0.5rem;
+    --space-3: 0.75rem;
+    --space-4: 1rem;
+    --space-6: 1.5rem;
+    --space-8: 2rem;
+
+    --measure: 70ch;
+    --page-max: 76rem;
+    --controls-width: 22rem;
+    --control-min-size: 2.75rem;
+
+    --border: 1px solid GrayText;
+    --focus-outline: 3px solid Highlight;
+    --focus-offset: 2px;
+
+    --color-text: CanvasText;
+    --color-background: Canvas;
+    --color-muted: GrayText;
+    --color-link: LinkText;
+    /* Semantic state placeholders; errors are also marked with text and aria-invalid. */
+    --color-error: CanvasText;
+    --error-border: 3px solid CanvasText;
+
+    --chart-ink: CanvasText;
+    --chart-muted: GrayText;
+    --chart-background: Canvas;
+  }
+}

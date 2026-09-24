@@ -1,0 +1,145 @@
+/*
+ * Chart primitives. Series are distinguished by fill vs outline, hatch
+ * pattern, stroke width and dash pattern, never by hue alone.
+ */
+@layer components {
+  .chart {
+    display: grid;
+    gap: var(--space-3);
+    min-inline-size: 0;
+  }
+
+  .chart__caption {
+    display: grid;
+    gap: var(--space-1);
+    max-inline-size: var(--measure);
+  }
+
+  .chart__title {
+    font-weight: bold;
+  }
+
+  .chart__canvas {
+    inline-size: 100%;
+    min-inline-size: 0;
+    overflow: hidden;
+  }
+
+  .chart__svg {
+    font-size: 0.75rem;
+    color: var(--chart-ink);
+  }
+
+  .chart__svg text {
+    fill: currentColor;
+  }
+
+  .chart__axis line,
+  .chart__grid line {
+    stroke: var(--chart-muted);
+    stroke-width: 1;
+  }
+
+  .chart__grid line {
+    stroke-dasharray: 2 4;
+  }
+
+  .chart__axis-label {
+    font-weight: bold;
+  }
+
+  .chart__bar {
+    stroke: var(--chart-ink);
+    stroke-width: 0.5;
+  }
+
+  /* Highlighted bars get their hatch from the `fill` attribute; CSS must not override it. */
+  .chart__bar:not([data-highlighted]) {
+    fill: var(--chart-muted);
+  }
+
+  .chart__bar[data-highlighted] {
+    stroke-width: 1;
+  }
+
+  .chart__pattern-background {
+    fill: var(--chart-background);
+  }
+
+  .chart__pattern-line {
+    stroke: var(--chart-ink);
+    stroke-width: 3;
+  }
+
+  .chart__marker line {
+    stroke: var(--chart-ink);
+    stroke-width: 1.5;
+    stroke-dasharray: 6 3;
+  }
+
+  .chart__marker text {
+    font-weight: bold;
+  }
+
+  .chart__line {
+    fill: none;
+    stroke: var(--chart-ink);
+    stroke-linejoin: round;
+  }
+
+  .chart__line[data-variant='muted'] {
+    stroke: var(--chart-muted);
+    stroke-width: 1;
+    stroke-opacity: 0.6;
+  }
+
+  .chart__line[data-variant='primary'] {
+    stroke-width: 3;
+  }
+
+  .chart__line[data-variant='secondary'] {
+    stroke-width: 2;
+    stroke-dasharray: 8 4;
+  }
+
+  .chart__line[data-variant='tertiary'] {
+    stroke-width: 2;
+    stroke-dasharray: 2 3;
+  }
+
+  .chart__legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-4);
+    padding: 0;
+    list-style: none;
+    font-size: 0.875em;
+  }
+
+  .chart__legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .chart__swatch {
+    flex: none;
+    color: var(--chart-ink);
+  }
+
+  .data-table {
+    overflow-x: auto;
+    max-block-size: 24rem;
+    overflow-y: auto;
+  }
+
+  .data-table caption {
+    text-align: start;
+    font-weight: bold;
+    padding-block-end: var(--space-2);
+  }
+
+  .data-table td {
+    font-variant-numeric: tabular-nums;
+  }
+}

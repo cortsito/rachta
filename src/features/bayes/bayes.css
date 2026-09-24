@@ -1,0 +1,27 @@
+@layer components {
+  .confusion-matrix {
+    overflow-x: auto;
+  }
+
+  .confusion-matrix td,
+  .confusion-matrix th {
+    text-align: end;
+  }
+
+  .confusion-matrix th[scope='row'] {
+    text-align: start;
+  }
+
+  .people-grid__person {
+    stroke: var(--chart-ink);
+    stroke-width: 1;
+  }
+
+  .people-grid__person:not([data-outline]) {
+    fill: var(--chart-ink);
+  }
+
+  .people-grid__person[data-outline] {
+    fill: var(--chart-background);
+  }
+}

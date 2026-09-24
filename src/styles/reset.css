@@ -1,0 +1,40 @@
+@layer reset {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  body,
+  h1,
+  h2,
+  h3,
+  p,
+  ul,
+  ol,
+  dl,
+  dd,
+  figure,
+  fieldset {
+    margin: 0;
+  }
+
+  fieldset {
+    padding: 0;
+    border: 0;
+    min-inline-size: 0;
+  }
+
+  img,
+  svg {
+    display: block;
+    max-inline-size: 100%;
+  }
+
+  input,
+  button,
+  select,
+  textarea {
+    font: inherit;
+  }
+}

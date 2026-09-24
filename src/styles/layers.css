@@ -1,0 +1,6 @@
+/*
+ * Cascade layer order. Must be imported before any other stylesheet.
+ * reset → tokens → base → layout → components → utilities
+ * Feature stylesheets add rules to `components`.
+ */
+@layer reset, tokens, base, layout, components, utilities;

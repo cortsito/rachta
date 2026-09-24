@@ -1,0 +1,186 @@
+@layer components {
+  /* Fields */
+  .field {
+    display: grid;
+    gap: var(--space-1);
+  }
+
+  .field__control {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-3);
+  }
+
+  .field__range {
+    flex: 1 1 8rem;
+    min-block-size: var(--control-min-size);
+  }
+
+  .field__number-group {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+  }
+
+  .field__number,
+  .field__text {
+    min-block-size: var(--control-min-size);
+    padding: var(--space-1) var(--space-2);
+    border: var(--border);
+  }
+
+  .field__number {
+    /* Fits 7 digits (1.000.000) plus the native spinner. */
+    inline-size: 12ch;
+  }
+
+  .field__text {
+    inline-size: 100%;
+  }
+
+  .field__hint {
+    color: var(--color-muted);
+    font-size: 0.875em;
+  }
+
+  .field__error {
+    color: var(--color-error);
+    font-weight: bold;
+  }
+
+  .field[data-invalid] .field__number {
+    border: var(--error-border);
+  }
+
+  .field--checkbox {
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    column-gap: var(--space-2);
+  }
+
+  .field--checkbox .field__hint {
+    grid-column: 1 / -1;
+  }
+
+  .field__checkbox {
+    inline-size: 1.25rem;
+    block-size: 1.25rem;
+  }
+
+  /* Forms and buttons */
+  .sim-form,
+  .sim-form__fieldset {
+    display: grid;
+    gap: var(--space-4);
+  }
+
+  .sim-form__legend {
+    font-weight: bold;
+    margin-block-end: var(--space-2);
+  }
+
+  .button {
+    min-block-size: var(--control-min-size);
+    padding: var(--space-2) var(--space-4);
+    border: var(--border);
+    cursor: pointer;
+  }
+
+  .button--primary {
+    font-weight: bold;
+  }
+
+  .sim-form .button--primary {
+    justify-self: start;
+  }
+
+  /* Status */
+  .lab__status:empty,
+  .share__status:empty {
+    display: none;
+  }
+
+  .lab__results[aria-busy='true'] .metric-list,
+  .lab__results[aria-busy='true'] .chart {
+    opacity: 0.5;
+  }
+
+  /* Metrics */
+  .metric-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+    gap: var(--space-4);
+  }
+
+  .metric {
+    display: grid;
+    align-content: start;
+    gap: var(--space-1);
+    padding: var(--space-3);
+    border: var(--border);
+    min-inline-size: 0;
+  }
+
+  .metric__value {
+    font-size: 1.75em;
+    font-weight: bold;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+  }
+
+  .metric__provenance {
+    font-weight: bold;
+  }
+
+  .metric__detail {
+    color: var(--color-muted);
+    font-size: 0.875em;
+  }
+
+  /* Disclosures */
+  .disclosure {
+    border: var(--border);
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .disclosure__summary {
+    cursor: pointer;
+    padding-block: var(--space-2);
+  }
+
+  .disclosure__body {
+    display: grid;
+    gap: var(--space-2);
+    padding-block: var(--space-2);
+    max-inline-size: var(--measure);
+  }
+
+  .disclosure__body ul {
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  /* Share */
+  .share {
+    display: grid;
+    gap: var(--space-2);
+    justify-items: start;
+  }
+
+  .share .field {
+    inline-size: 100%;
+  }
+
+  /* Landing */
+  .lab-list {
+    display: grid;
+    gap: var(--space-4);
+    padding: 0;
+    list-style: none;
+  }
+
+  .lab-list__link {
+    font-weight: bold;
+  }
+}
