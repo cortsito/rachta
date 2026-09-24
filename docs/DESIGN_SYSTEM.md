@@ -1,10 +1,10 @@
-# Rachas — design system
+# Rachta — design system
 
 ## Status and purpose
 
-This is the visual source of truth for Rachas. It replaces the previous decision to defer product styling while preserving the product and technical contracts in `docs/PRODUCT_BRIEF.md` and `docs/ARCHITECTURE.md`.
+This is the visual source of truth for Rachta. It replaces the previous decision to defer product styling while preserving the product and technical contracts in `docs/PRODUCT_BRIEF.md` and `docs/ARCHITECTURE.md`.
 
-Rachas should feel like a calm, contemporary probability instrument: clear before expressive, precise before decorative, and warm without becoming playful. It may borrow *principles* from Stripe—strong type hierarchy, disciplined white space, restrained colour, and a confident grid—but must not imitate Stripe's visual assets, composition, copy, or purple brand.
+Rachta should feel like a calm, contemporary probability instrument: clear before expressive, precise before decorative, and warm without becoming playful. It may borrow *principles* from Stripe—strong type hierarchy, disciplined white space, restrained colour, and a confident grid—but must not imitate Stripe's visual assets, composition, copy, or purple brand.
 
 The system deliberately specifies **roles, boundaries, and decision criteria**, not a frozen mockup. A future redesign should change tokens and component styling first, with markup and simulation logic largely untouched.
 
@@ -119,7 +119,7 @@ The footer is calm and factual. It should state the educational disclaimer, attr
 
 > Hecho por Luis Cortés · Esta aplicación no usa cookies ni analítica de terceros.
 
-An optional “Invítame un café” link appears only when a configured support URL exists. It is a normal outbound anchor, not an embedded widget or tracker. The destination and its privacy policy are outside Rachas.
+An optional “Invítame un café” link appears only when a configured support URL exists. It is a normal outbound anchor, not an embedded widget or tracker. The destination and its privacy policy are outside Rachta.
 
 ### Explore and landing
 

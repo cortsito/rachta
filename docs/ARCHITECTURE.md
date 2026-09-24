@@ -1,4 +1,4 @@
-# Rachas — architecture
+# Rachta — architecture
 
 Durable technical decisions. `docs/PRODUCT_BRIEF.md` is the product contract; this file is the technical one. If a decision here must change, record the reason here first.
 
@@ -21,7 +21,6 @@ src/
     simulation.ts          kernel registry, worker client, main-thread fallback
     simulation.worker.ts   module worker: runs one kernel per request
     useSimulation.ts       hook: input → running/result/stale/error
-    config.ts (+test)      optional build-time configuration (support link)
     guides.ts              registry of each lab's Método/Usos content
     App.tsx                shell (skip link, header/nav, main, footer), view switch, lab pager, focus + title
     Landing.tsx            entry view: hero graphic, lab catalogue, exact-vs-estimated primer

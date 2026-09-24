@@ -70,10 +70,10 @@ Items are in dependency order. Each item is small and verifiable. Follow `docs/A
 - [x] Chart treatment: faint grid, baseline, direct marker labels with halo, risk role for thresholds (still hatched / labelled)
 - [x] `?page=method` and `?page=uses` in the typed query contract (+ tests); nav Explorar / Método / Usos with `aria-current`, titles, focus; lab → Método section deep link via fragment
 - [x] Método and Usos content in typed per-lab `guide.ts`, verified against each `model.ts`; lab "Supuestos" read from the same list
-- [x] Footer: disclaimer, Luis Cortés attribution, scoped no-cookies / no third-party analytics statement, optional support link (`VITE_SUPPORT_URL`)
+- [x] Footer: disclaimer, Luis Cortés attribution, scoped no-cookies / no third-party analytics statement, and plain Ko-fi link
 - [ ] Browser verification of the redesign at 1280 px and 360 px (see "Verification" in ARCHITECTURE.md). Not yet done: this pass was checked with tests, typecheck and a production build only.
 
 ### Optional (only after everything above)
 
-- [x] A configurable support link, hidden when unset
+- [x] A plain Ko-fi support link in the footer
 - [ ] Preset scenarios as plain links (canonical query strings), Monty Hall

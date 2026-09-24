@@ -1,8 +1,8 @@
-# Rachas — product brief
+# Rachta — product brief
 
 ## Product thesis
 
-**Rachas** is an interactive laboratory for randomness, streaks, and risk. A visitor changes a hypothesis with clear controls, runs thousands of reproducible futures, and learns the difference between intuition, an exact probability, and a simulation estimate.
+**Rachta** is an interactive laboratory for randomness, streaks, and risk. A visitor changes a hypothesis with clear controls, runs thousands of reproducible futures, and learns the difference between intuition, an exact probability, and a simulation estimate.
 
 It is not a financial calculator, gambling product, or complete course. It is a fast, honest experience for probability/statistics students, data and programming learners, and curious people who want to *see* why uncertainty and streaks feel counterintuitive. Product copy is Spanish in this release; do not spend time on internationalization.
 
@@ -89,7 +89,7 @@ Inputs: expected event frequency per period, typical severity, dispersion, numbe
 
 ### Only after the core is complete
 
-Monty Hall, preset scenarios, PNG export, English copy, and a configurable support link are optional. (The support link exists: it renders only when `VITE_SUPPORT_URL` is set at build time.) Never trade away a working lab, tests, responsive semantics, or verification for an optional feature.
+Monty Hall, preset scenarios, PNG export, and English copy are optional. The footer's fixed Ko-fi link is a plain outbound anchor, never an embedded payment widget. Never trade away a working lab, tests, responsive semantics, or verification for an optional feature.
 
 ## Behaviour and quality requirements
 

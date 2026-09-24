@@ -88,6 +88,17 @@
     color: var(--color-ink);
   }
 
+  .site-footer__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-2);
+    align-items: baseline;
+  }
+
+  .site-footer__links a {
+    font-weight: var(--font-weight-strong);
+  }
+
   /* Buttons (also on links that act as a primary call to action) */
   .button {
     display: inline-flex;

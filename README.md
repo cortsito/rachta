@@ -1,6 +1,6 @@
-# Rachas
+# Rachta
 
-Rachas is an interactive laboratory for randomness, streaks and risk, written in Spanish. You change a hypothesis, simulate thousands of reproducible futures, and compare intuition, an exact probability and a simulation estimate. Everything runs in the browser. There are no accounts, no cookies, no third-party analytics and no third-party requests (the typeface is self-hosted).
+Rachta is an interactive laboratory for randomness, streaks and risk, written in Spanish. You change a hypothesis, simulate thousands of reproducible futures, and compare intuition, an exact probability and a simulation estimate. Everything runs in the browser. There are no accounts, no cookies, no third-party analytics and no third-party requests (the typeface is self-hosted).
 
 - Product brief: [`docs/PRODUCT_BRIEF.md`](docs/PRODUCT_BRIEF.md)
 - Architecture and contracts: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
@@ -28,16 +28,6 @@ npm run build        # type check + production build in dist/
 npm run check        # typecheck + tests + build
 npm run preview      # serve the production build (http://localhost:4173)
 ```
-
-## Configuration
-
-All configuration is optional and read at build time.
-
-| Variable | Effect |
-| --- | --- |
-| `VITE_SUPPORT_URL` | An `https://` address. When set, the footer shows an "Invítame un café" link to it. When unset or invalid, no link is shown. |
-
-For example: `VITE_SUPPORT_URL=https://example.org/your-page npm run build`. No support address is configured in the repository.
 
 ## Static hosting
 

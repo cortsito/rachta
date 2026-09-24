@@ -21,10 +21,10 @@ describe('navigation state', () => {
   });
 
   it('gives every view its own document title', () => {
-    expect(viewTitle(state(''))).toBe('Rachas — laboratorio de aleatoriedad');
-    expect(viewTitle(state('?page=method'))).toBe('Método — Rachas');
-    expect(viewTitle(state('?page=uses'))).toBe('Usos — Rachas');
-    expect(viewTitle(state('?lab=ruin'))).toBe(`${labInfo.ruin.title} — Rachas`);
+    expect(viewTitle(state(''))).toBe('Rachta — laboratorio de aleatoriedad');
+    expect(viewTitle(state('?page=method'))).toBe('Método — Rachta');
+    expect(viewTitle(state('?page=uses'))).toBe('Usos — Rachta');
+    expect(viewTitle(state('?lab=ruin'))).toBe(`${labInfo.ruin.title} — Rachta`);
   });
 });
 
@@ -39,8 +39,8 @@ describe('app shell', () => {
     expect(html).toContain('Hecho por Luis Cortés');
     expect(html).toContain('no usa cookies ni analítica de terceros');
     expect(html).toContain('No ofrece recomendaciones financieras, médicas ni de apuestas.');
-    // No support link unless VITE_SUPPORT_URL is configured.
-    expect(html).not.toContain('Invítame un café');
+    expect(html).toContain('href="https://ko-fi.com/corshex"');
+    expect(html).toContain('Invítame un café');
   });
 });
 

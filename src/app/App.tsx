@@ -4,7 +4,6 @@ import { CompoundLossLab } from '../features/compound-loss/CompoundLossLab.tsx';
 import { RuinLab } from '../features/ruin/RuinLab.tsx';
 import { StreaksLab } from '../features/streaks/StreaksLab.tsx';
 import { generateSeed } from '../lib/random.ts';
-import { SUPPORT_URL } from './config.ts';
 import { LAB_IDS, labInfo, labNumber, type LabId } from './labs.ts';
 import { Landing } from './Landing.tsx';
 import { absoluteUrl, currentFragment, followLink, navigate, useQueryString } from './location.ts';
@@ -12,7 +11,7 @@ import { methodSectionId, MethodPage } from './MethodPage.tsx';
 import { resolveQuery, serializeQuery, type LabState, type LabStateOf, type PageId, type QueryState } from './query.ts';
 import { UsesPage } from './UsesPage.tsx';
 
-const SITE_NAME = 'Rachas';
+const SITE_NAME = 'Rachta';
 
 /** Primary navigation. `page: null` is the landing view, which also holds the lab catalogue. */
 const NAV_ITEMS: readonly { label: string; page: PageId | null }[] = [
@@ -164,14 +163,25 @@ export function App() {
           Hecho por Luis Cortés · Esta aplicación no usa cookies ni analítica de terceros. Las simulaciones se calculan
           en tu navegador, sin cuentas.
         </p>
-        {SUPPORT_URL && (
-          <p>
-            <a href={SUPPORT_URL} rel="noreferrer">
-              Invítame un café
-            </a>{' '}
-            (sitio externo)
-          </p>
-        )}
+        <p className="site-footer__links">
+          <a href="https://github.com/cortsito" rel="noreferrer">
+            GitHub
+          </a>
+          <span aria-hidden="true">·</span>
+          <a href="https://corshex.com" rel="noreferrer">
+            corshex.com
+          </a>
+          <span aria-hidden="true">·</span>
+          <a href="https://www.linkedin.com/in/corshex" rel="noreferrer">
+            LinkedIn
+          </a>
+        </p>
+        <p>
+          <a href="https://ko-fi.com/corshex" rel="noreferrer">
+            Invítame un café
+          </a>{' '}
+          (sitio externo)
+        </p>
       </footer>
     </>
   );

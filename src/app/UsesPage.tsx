@@ -11,7 +11,7 @@ export function UsesPage() {
           Cuándo ayuda cada laboratorio
         </h1>
         <p className="page__lede">
-          Rachas sirve para razonar sobre situaciones en las que el azar engaña a la intuición. Estos son cuatro patrones
+          Rachta sirve para razonar sobre situaciones en las que el azar engaña a la intuición. Estos son cuatro patrones
           habituales, cada uno con lo que ayuda a ver y con su límite.
         </p>
         <p className="note" role="note">
