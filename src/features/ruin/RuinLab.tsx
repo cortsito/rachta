@@ -5,29 +5,31 @@ import { SimulationForm } from '../../components/lab/SimulationForm.tsx';
 import { useParamDraft } from '../../components/lab/useParamDraft.ts';
 import { MetricList, type Metric } from '../../components/ui/MetricList.tsx';
 import { RangeField } from '../../components/ui/RangeField.tsx';
-import { labInfo, type LabViewProps } from '../../app/labs.ts';
+import { labEyebrow, labInfo, type LabViewProps } from '../../app/labs.ts';
 import { useSimulation } from '../../app/useSimulation.ts';
 import { formatInteger, formatInterval, formatNumber, formatPercent, formatSampleCount } from '../../lib/format.ts';
 import { generateSeed } from '../../lib/random.ts';
 import { ruinChart } from './chart.ts';
+import { ruinGuide } from './guide.ts';
 import { interpretRuin } from './interpretation.ts';
 import { RUIN_FRACTION, type RuinResult } from './model.ts';
 import { MAX_REACHABLE_CAPITAL, roundsLimit, ruinSchema } from './params.ts';
 
 const { specs } = ruinSchema;
 
-function buildMetrics(result: RuinResult): Metric[] {
+/** The lab's single answer, then the figures that support it. */
+function buildMetrics(result: RuinResult): { answer: Metric; supporting: Metric[] } {
   const { futures } = result.input;
   const { ruined, medianMaxDrawdown, medianFinalCapital, exact } = result;
   const typicalGrowth = exact.expectedLogGrowth === -Infinity ? '−100 %' : formatPercent(Math.exp(exact.expectedLogGrowth) - 1);
-  return [
-    {
-      id: 'ruin-probability',
-      label: `Probabilidad de ruina (capital bajo el ${formatPercent(RUIN_FRACTION)} inicial)`,
-      value: formatPercent(ruined.value),
-      provenance: { kind: 'estimated', samples: futures },
-      detail: `${formatInteger(ruined.successes)} de ${formatInteger(ruined.trials)} futuros · IC 95 %: ${formatInterval(ruined.interval95)}`,
-    },
+  const answer: Metric = {
+    id: 'ruin-probability',
+    label: `Probabilidad de ruina (capital bajo el ${formatPercent(RUIN_FRACTION)} inicial)`,
+    value: formatPercent(ruined.value),
+    provenance: { kind: 'estimated', samples: futures },
+    detail: `${formatInteger(ruined.successes)} de ${formatInteger(ruined.trials)} futuros · IC 95 %: ${formatInterval(ruined.interval95)}`,
+  };
+  const supporting: Metric[] = [
     {
       id: 'median-drawdown',
       label: 'Caída máxima típica (mediana)',
@@ -54,6 +56,7 @@ function buildMetrics(result: RuinResult): Metric[] {
       provenance: { kind: 'exact' },
     },
   ];
+  return { answer, supporting };
 }
 
 function Results({ result }: { result: RuinResult }) {
@@ -61,6 +64,7 @@ function Results({ result }: { result: RuinResult }) {
   const { checkpoints, bands, samplePaths } = result;
   const [p10, p50, p90] = bands;
   const { series, references } = ruinChart(result);
+  const { answer, supporting } = buildMetrics(result);
 
   const description =
     `${formatInteger(samplePaths.length)} futuros de muestra (líneas finas) junto a los percentiles 10, 50 y 90 del ` +
@@ -71,12 +75,7 @@ function Results({ result }: { result: RuinResult }) {
 
   return (
     <>
-      <MetricList metrics={buildMetrics(result)} label="Métricas de riesgo de ruina" />
-      <div className="lab__interpretation">
-        {interpretRuin(result).map((paragraph) => (
-          <p key={paragraph}>{paragraph}</p>
-        ))}
-      </div>
+      <MetricList metrics={[answer]} label="Respuesta" primary />
       <ChartFigure
         title="Capital simulado a lo largo de las rondas"
         description={description}
@@ -104,6 +103,12 @@ function Results({ result }: { result: RuinResult }) {
           />
         )}
       </ChartFigure>
+      <MetricList metrics={supporting} label="Métricas de riesgo de ruina" />
+      <div className="lab__interpretation">
+        {interpretRuin(result).map((paragraph) => (
+          <p key={paragraph}>{paragraph}</p>
+        ))}
+      </div>
     </>
   );
 }
@@ -122,6 +127,7 @@ export function RuinLab({ params, seed, shareUrl, onRun }: LabViewProps<'ruin'>)
 
   return (
     <LabLayout
+      eyebrow={labEyebrow('ruin')}
       question={labInfo.ruin.question}
       intro={
         <>
@@ -129,7 +135,7 @@ export function RuinLab({ params, seed, shareUrl, onRun }: LabViewProps<'ruin'>)
             Expón una fracción de tu capital cada ronda y observa si una pequeña ventaja basta para sobrevivir a una
             mala secuencia, o si exponer demasiado te arruina incluso con la ventaja de tu lado.
           </p>
-          <p role="note">
+          <p className="note" role="note">
             Herramienta educativa con unidades hipotéticas: no es una recomendación financiera, de apuestas ni de
             ningún tipo de decisión real.
           </p>
@@ -221,13 +227,9 @@ export function RuinLab({ params, seed, shareUrl, onRun }: LabViewProps<'ruin'>)
       }
       assumptions={
         <ul>
-          <li>Cada ronda expone una fracción fija del capital actual (no del capital inicial).</li>
-          <li>Las rondas son independientes entre sí, con la misma probabilidad de éxito.</li>
-          <li>
-            La ruina es absorbente: cuando el capital cae por debajo del {formatPercent(RUIN_FRACTION)} del capital
-            inicial, ese futuro deja de jugar y mantiene ese valor.
-          </li>
-          <li>Es un modelo educativo con unidades hipotéticas: no representa dinero real ni una recomendación.</li>
+          {ruinGuide.method.assumptions.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
         </ul>
       }
       shareUrl={shareUrl}

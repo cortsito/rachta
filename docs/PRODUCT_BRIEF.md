@@ -15,7 +15,7 @@ The target reaction is: “I finally understood this in two minutes; I want to s
 - **No friction.** Open, explore, and share. No account, backend, tracking, or keys.
 - **A finished core over a broad catalogue.** Four complete labs are better than ten partial ones.
 - **Educational risk only.** The capital lab uses hypothetical units and explicitly does not recommend financial, betting, or real-world decisions.
-- **Design deferred by intent.** The app needs a semantic, accessible, responsive functional interface—not product styling or a visual direction. Do not make brand or UI-art decisions that a later designer would need to undo.
+- **A reskinnable visual system.** `docs/DESIGN_SYSTEM.md` defines the adopted visual direction and its semantic-token boundaries. Apply it without turning visual details into JSX or hard-coded feature styles that a later designer would need to undo.
 
 ## Fixed technical baseline
 
@@ -23,7 +23,7 @@ Use this baseline unless the existing repository already has a compatible implem
 
 - React, strict TypeScript, and Vite for a static single-page application.
 - Native browser APIs, React hooks, plain `.css` files, and custom SVG for data graphics. No Tailwind, CSS framework, CSS-in-JS, component kit, chart library, router, or client-state library.
-- One URL-query state contract, using `lab` plus validated parameter values and an optional seed. No server-side routing is required.
+- One URL-query state contract, using `lab` plus validated parameter values and an optional seed, or `page` for the parameterless `Método` and `Usos` views. No server-side routing is required.
 - A small seeded PRNG and pure simulation functions in `src/lib` or equivalent. Simulation code must not depend on React or DOM state.
 - A focused test runner for pure probability functions, URL parsing/serialization, seeded reproducibility, and boundary cases.
 
@@ -48,13 +48,13 @@ Componentize by behavior and data ownership—not for a textbook atomic-design d
 
 ### CSS contract
 
-Use only standard CSS with a small, documented layer order such as reset → tokens → base → layout → components → utilities. Tokens may cover structure (spacing, breakpoints, semantic states) but must not attempt to establish a final brand. Use system font stacks and neutral browser/system colors. Charts must remain distinguishable through labels, patterns, line styles, and text—not only arbitrary color choices. Avoid gradients, shadows, stock imagery, glass effects, theme switching, decorative icon systems, custom fonts, and visual marketing polish.
+Use only standard CSS with the documented layer order reset → tokens → base → layout → components → utilities. `docs/DESIGN_SYSTEM.md` defines the approved visual identity, tokens, typeface, and restrained use of colour, gradients, and elevation. Keep styling semantic and reskinnable. Charts must remain distinguishable through labels, patterns, line styles, and text—not only colour.
 
 The minimum visual responsibility is legibility: sensible document flow, grouping, responsive columns, form sizing, focus visibility, error/disabled states, and data graphics that can be read. Keep selectors predictable so a future CSS pass can replace presentation without changing markup.
 
 ## First-release scope
 
-Build a static SPA that can later deploy to Vercel, Netlify, Cloudflare Pages, or GitHub Pages. It needs a functional navigation mechanism, a concise landing/entry state, and four working labs. Each lab uses the same logical contract:
+Build a static SPA that can later deploy to Vercel, Netlify, Cloudflare Pages, or GitHub Pages. It needs a functional navigation mechanism (**Explorar**, **Método**, **Usos**), a concise landing/entry state, four working labs, and the two companion views defined in `docs/DESIGN_SYSTEM.md`: `Método` documents each lab's question, model, formula or procedure, exact versus estimated results, assumptions and limits; `Usos` describes when each lab helps a person reason, with its limitation. Each lab uses the same logical contract:
 
 1. a Spanish question and short explanation;
 2. labelled controls with meaningful defaults and a `Simular` action;
@@ -89,7 +89,7 @@ Inputs: expected event frequency per period, typical severity, dispersion, numbe
 
 ### Only after the core is complete
 
-Monty Hall, preset scenarios, PNG export, English copy, and a configurable donation link are optional. Never trade away a working lab, tests, responsive semantics, or verification for an optional feature.
+Monty Hall, preset scenarios, PNG export, English copy, and a configurable support link are optional. (The support link exists: it renders only when `VITE_SUPPORT_URL` is set at build time.) Never trade away a working lab, tests, responsive semantics, or verification for an optional feature.
 
 ## Behaviour and quality requirements
 
@@ -103,4 +103,4 @@ Monty Hall, preset scenarios, PNG export, English copy, and a configurable donat
 
 The release is done when someone can open the site, alter values, run all four labs, and receive coherent metrics; open the same shared URL and recover the scenario; operate all functionality at a mobile viewport; and build the project without material console errors. Essential formulas and boundary cases have automated tests or equally precise automated checks. `README.md` contains accurate install, test, build, and static-hosting guidance.
 
-Authentication, real payments, CMS, accounts, exhaustive SEO, databases, generated content, external data, deployment, and aesthetic product design are explicitly out of scope.
+Authentication, real payments, CMS, accounts, exhaustive SEO, databases, generated content, external data, and deployment are explicitly out of scope. The product design is governed by `docs/DESIGN_SYSTEM.md`.

@@ -11,7 +11,7 @@ export function ruinChart(result: RuinResult): { series: LineSeries[]; reference
   return {
     references: [
       { value: capital, label: `Capital inicial: ${formatNumber(capital)}` },
-      { value: ruinLevel, label: `Ruina: ${formatPercent(RUIN_FRACTION)} del capital inicial` },
+      { value: ruinLevel, label: `Ruina: ${formatPercent(RUIN_FRACTION)} del capital inicial`, tone: 'risk' },
     ],
     series: [
       // Sample paths are context: a single explosive path must not squeeze the percentiles and references.

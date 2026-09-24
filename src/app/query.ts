@@ -2,8 +2,12 @@
  * URL query-state contract (pure; no DOM access).
  *
  *   ?lab=<LabId>&<param>=<value>…&seed=<seed>
+ *   ?page=<PageId>
  *
- * - No `lab`, or an unknown one, is the landing view and serializes to "".
+ * - A valid `lab` wins: every other key except its params and seed is dropped.
+ * - Otherwise a valid `page` selects a content view (`?page=method`, `?page=uses`).
+ * - Anything else, including an unknown `lab` or `page`, is the landing view
+ *   and serializes to "".
  * - Param keys and order come from the lab's schema; unknown keys are
  *   dropped; malformed or out-of-range values are replaced or clamped.
  * - A lab view always has a valid seed. A missing or invalid seed is replaced
@@ -15,19 +19,31 @@ import { isValidSeed } from '../lib/random.ts';
 
 export type LabState = { [L in LabId]: { lab: L; params: LabParams<L>; seed: string } }[LabId];
 export type LabStateOf<L extends LabId> = Extract<LabState, { lab: L }>;
-export type QueryState = { lab: null } | LabState;
 
-export const LANDING: QueryState = { lab: null };
+/** Content views without parameters. The landing view is `page: null`. */
+export const PAGE_IDS = ['method', 'uses'] as const;
+export type PageId = (typeof PAGE_IDS)[number];
+export type PageState = { lab: null; page: PageId | null };
+export type QueryState = PageState | LabState;
+
+export const LANDING: PageState = { lab: null, page: null };
+
+export function isPageId(value: unknown): value is PageId {
+  return typeof value === 'string' && (PAGE_IDS as readonly string[]).includes(value);
+}
 
 function schemaFor(lab: LabId): ParamSchema<ParamSpecs> {
   return labSchemas[lab] as unknown as ParamSchema<ParamSpecs>;
 }
 
 /** Parses any query string. `seed` is null when absent or invalid. */
-export function parseQuery(search: string): { lab: null } | (Omit<LabState, 'seed'> & { seed: string | null }) {
+export function parseQuery(search: string): PageState | (Omit<LabState, 'seed'> & { seed: string | null }) {
   const query = new URLSearchParams(search);
   const lab = query.get('lab');
-  if (!isLabId(lab)) return { lab: null };
+  if (!isLabId(lab)) {
+    const page = query.get('page');
+    return isPageId(page) ? { lab: null, page } : LANDING;
+  }
   const seed = query.get('seed');
   return {
     lab,
@@ -39,13 +55,13 @@ export function parseQuery(search: string): { lab: null } | (Omit<LabState, 'see
 /** Parses a query string and fills a missing seed with `makeSeed()`. */
 export function resolveQuery(search: string, makeSeed: () => string): QueryState {
   const parsed = parseQuery(search);
-  if (parsed.lab === null) return LANDING;
+  if (parsed.lab === null) return parsed;
   return { ...parsed, seed: parsed.seed ?? makeSeed() } as LabState;
 }
 
 /** Canonical query string, including the leading "?" (or "" for the landing view). */
 export function serializeQuery(state: QueryState): string {
-  if (state.lab === null) return '';
+  if (state.lab === null) return state.page === null ? '' : `?page=${state.page}`;
   const query = new URLSearchParams();
   query.set('lab', state.lab);
   for (const [key, value] of serializeParams(schemaFor(state.lab), state.params)) query.set(key, value);

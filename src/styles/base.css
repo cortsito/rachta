@@ -1,23 +1,72 @@
 @layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
   body {
-    font-family: var(--font-body);
-    line-height: var(--line-height);
-    color: var(--color-text);
-    background: var(--color-background);
+    font-family: var(--font-sans);
+    font-size: var(--font-size-body);
+    font-weight: var(--font-weight-body);
+    line-height: var(--line-height-body);
+    color: var(--color-ink);
+    background: var(--color-page);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   h1,
   h2,
   h3 {
-    line-height: 1.2;
+    font-weight: var(--font-weight-heading);
+    font-stretch: var(--font-stretch-display);
+    line-height: var(--line-height-tight);
+    letter-spacing: var(--tracking-heading);
+    text-wrap: balance;
+  }
+
+  h1 {
+    font-size: var(--font-size-h1);
+    font-weight: var(--font-weight-display);
+    letter-spacing: var(--tracking-display);
+  }
+
+  h2 {
+    font-size: var(--font-size-h2);
+  }
+
+  h3 {
+    font-size: var(--font-size-h3);
+    line-height: var(--line-height-snug);
+  }
+
+  p,
+  li,
+  dd {
+    text-wrap: pretty;
+  }
+
+  strong {
+    font-weight: var(--font-weight-strong);
   }
 
   a {
     color: var(--color-link);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.2em;
+  }
+
+  a:hover {
+    color: var(--color-link-hover);
+    text-decoration-thickness: 2px;
+  }
+
+  ::selection {
+    background: var(--color-selection);
   }
 
   :focus-visible {
-    outline: var(--focus-outline);
+    outline: var(--focus-ring);
     outline-offset: var(--focus-offset);
   }
 
@@ -26,19 +75,42 @@
     outline: none;
   }
 
+  /* Seeds and identifiers: same typeface, tabular figures (no monospace face). */
   code {
-    font-family: var(--font-mono);
+    font: inherit;
+    font-variant-numeric: tabular-nums;
+    padding-inline: var(--space-1);
+    border-radius: var(--radius-control);
+    background: var(--color-surface-muted);
   }
 
   table {
     border-collapse: collapse;
+    font-variant-numeric: tabular-nums;
+  }
+
+  caption {
+    text-align: start;
+    font-weight: var(--font-weight-strong);
+    padding-block-end: var(--space-3);
   }
 
   th,
   td {
-    padding: var(--space-1) var(--space-2);
-    border: var(--border);
+    padding: var(--space-2) var(--space-3);
+    border-block-end: var(--border-rule);
     text-align: start;
+    vertical-align: top;
+  }
+
+  th {
+    font-weight: var(--font-weight-strong);
+  }
+
+  thead th {
+    font-size: var(--font-size-small);
+    color: var(--color-muted);
+    border-block-end-color: var(--color-control-border);
   }
 
   @media (prefers-reduced-motion: reduce) {

@@ -5,10 +5,11 @@ import { SimulationForm } from '../../components/lab/SimulationForm.tsx';
 import { useParamDraft } from '../../components/lab/useParamDraft.ts';
 import { MetricList, type Metric } from '../../components/ui/MetricList.tsx';
 import { RangeField } from '../../components/ui/RangeField.tsx';
-import { labInfo, type LabViewProps } from '../../app/labs.ts';
+import { labEyebrow, labInfo, type LabViewProps } from '../../app/labs.ts';
 import { useSimulation } from '../../app/useSimulation.ts';
 import { formatInteger, formatInterval, formatNumber, formatPercent, formatSampleCount } from '../../lib/format.ts';
 import { generateSeed } from '../../lib/random.ts';
+import { streaksGuide } from './guide.ts';
 import { interpretStreaks } from './interpretation.ts';
 import type { StreaksResult } from './model.ts';
 import { streaksSchema } from './params.ts';
@@ -17,17 +18,18 @@ import './streaks.css';
 
 const { specs } = streaksSchema;
 
-function buildMetrics(result: StreaksResult): Metric[] {
+/** The lab's single answer, then the figures that support it. */
+function buildMetrics(result: StreaksResult): { answer: Metric; supporting: Metric[] } {
   const { streak, attempts, futures, seed } = result.input;
   const { reached } = result;
-  return [
-    {
-      id: 'reach-estimated',
-      label: `Probabilidad de perder ${formatInteger(streak)} o más seguidas en ${formatInteger(attempts)} intentos`,
-      value: formatPercent(reached.value),
-      provenance: { kind: 'estimated', samples: futures },
-      detail: `${formatInteger(reached.successes)} de ${formatInteger(futures)} futuros · IC 95 %: ${formatInterval(reached.interval95)}`,
-    },
+  const answer: Metric = {
+    id: 'reach-estimated',
+    label: `Probabilidad de perder ${formatInteger(streak)} o más seguidas en ${formatInteger(attempts)} intentos`,
+    value: formatPercent(reached.value),
+    provenance: { kind: 'estimated', samples: futures },
+    detail: `${formatInteger(reached.successes)} de ${formatInteger(futures)} futuros · IC 95 %: ${formatInterval(reached.interval95)}`,
+  };
+  const supporting: Metric[] = [
     {
       id: 'reach-exact',
       label: 'La misma probabilidad, calculada con fórmula',
@@ -48,6 +50,7 @@ function buildMetrics(result: StreaksResult): Metric[] {
       provenance: { kind: 'sample', description: `Un solo futuro (semilla ${seed})` },
     },
   ];
+  return { answer, supporting };
 }
 
 function distributionBins(result: StreaksResult): HistogramBin[] {
@@ -62,6 +65,7 @@ function distributionBins(result: StreaksResult): HistogramBin[] {
 
 function Results({ result }: { result: StreaksResult }) {
   const { streak, attempts, futures } = result.input;
+  const { answer, supporting } = buildMetrics(result);
   const bins = distributionBins(result);
   const mode = bins.reduce((best, bin) => (bin.count > best.count ? bin : best), bins[0]!).x0;
   const run = result.sampleRunLongest;
@@ -81,12 +85,7 @@ function Results({ result }: { result: StreaksResult }) {
 
   return (
     <>
-      <MetricList metrics={buildMetrics(result)} label="Métricas de rachas" />
-      <div className="lab__interpretation">
-        {interpretStreaks(result).map((paragraph) => (
-          <p key={paragraph}>{paragraph}</p>
-        ))}
-      </div>
+      <MetricList metrics={[answer]} label="Respuesta" primary />
       <ChartFigure
         title="Distribución de la peor racha de fallos"
         description={distributionDescription}
@@ -111,6 +110,12 @@ function Results({ result }: { result: StreaksResult }) {
           />
         )}
       </ChartFigure>
+      <MetricList metrics={supporting} label="Métricas de rachas" />
+      <div className="lab__interpretation">
+        {interpretStreaks(result).map((paragraph) => (
+          <p key={paragraph}>{paragraph}</p>
+        ))}
+      </div>
       <ChartFigure
         title="Un futuro de muestra, intento a intento"
         description={runDescription}
@@ -140,6 +145,7 @@ export function StreaksLab({ params, seed, shareUrl, onRun }: LabViewProps<'stre
 
   return (
     <LabLayout
+      eyebrow={labEyebrow('streaks')}
       question={labInfo.streaks.question}
       intro={
         <p>
@@ -207,12 +213,9 @@ export function StreaksLab({ params, seed, shareUrl, onRun }: LabViewProps<'stre
       }
       assumptions={
         <ul>
-          <li>Los intentos son independientes y todos tienen la misma probabilidad de acierto.</li>
-          <li>Una racha de fallos es una serie de fallos consecutivos dentro del mismo futuro; cada futuro empieza de cero.</li>
-          <li>
-            La probabilidad exacta se obtiene con una cadena de Markov sobre la longitud de la racha actual de fallos.
-          </li>
-          <li>Es un modelo educativo: no representa dinero, apuestas ni decisiones reales.</li>
+          {streaksGuide.method.assumptions.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
         </ul>
       }
       shareUrl={shareUrl}

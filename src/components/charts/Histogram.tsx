@@ -19,10 +19,12 @@ export interface HistogramBin {
   highlightedCount?: number;
 }
 
-/** Vertical reference line at an x value, labelled on the chart. */
+/** Reference line at a value, labelled on the chart. */
 export interface ChartMarker {
   value: number;
   label: string;
+  /** 'risk' marks a loss or ruin level. The label must still say what the line is. */
+  tone?: 'risk';
 }
 
 export interface HistogramProps {
@@ -131,10 +133,10 @@ export function Histogram({
           })}
         </g>
         <g className="chart__axis chart__axis--x" aria-hidden="true">
-          <line x1={MARGIN.left} x2={plotRight} y1={plotBottom} y2={plotBottom} />
+          <line className="chart__domain" x1={MARGIN.left} x2={plotRight} y1={plotBottom} y2={plotBottom} />
           {xTicks.map((tick) => (
             <g key={tick.position} transform={`translate(${tick.position},${plotBottom})`}>
-              <line y2={5} />
+              <line className="chart__tick" y2={5} />
               <text y={18} textAnchor="middle">
                 {tick.label}
               </text>
@@ -145,10 +147,10 @@ export function Histogram({
           </text>
         </g>
         <g className="chart__axis chart__axis--y" aria-hidden="true">
-          <line x1={MARGIN.left} x2={MARGIN.left} y1={MARGIN.top} y2={plotBottom} />
+          <line className="chart__domain" x1={MARGIN.left} x2={MARGIN.left} y1={MARGIN.top} y2={plotBottom} />
           {yTicks.map((tick) => (
             <g key={tick} transform={`translate(${MARGIN.left},${y(tick)})`}>
-              <line x2={-5} />
+              <line className="chart__tick" x2={-5} />
               <text x={-8} dy="0.32em" textAnchor="end">
                 {formatY(tick)}
               </text>
@@ -164,7 +166,7 @@ export function Histogram({
             const anchor = position > plotRight - 60 ? 'end' : position < MARGIN.left + 60 ? 'start' : 'middle';
             const labelY = MARGIN.top - 8 - (i % 2) * 14;
             return (
-              <g key={marker.label} className="chart__marker">
+              <g key={marker.label} className="chart__marker" data-tone={marker.tone}>
                 <line x1={position} x2={position} y1={labelY + 4} y2={plotBottom} />
                 <text x={position} y={labelY} textAnchor={anchor}>
                   {marker.label}

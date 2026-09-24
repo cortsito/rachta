@@ -60,6 +60,20 @@ Items are in dependency order. Each item is small and verifiable. Follow `docs/A
   - no console errors
   - fixed during verification: long formatted numbers (population, capital, thresholds) could overflow the bordered `.metric` box instead of wrapping; `.metric` now allows shrinking (`min-inline-size: 0`) and `.metric__value` wraps (`overflow-wrap: anywhere`)
 
+## Phase three: design system ("quiet precision")
+
+- [x] Two-tier tokens (primitives + semantic roles) in `styles/tokens.css`; no palette values outside it
+- [x] Self-hosted Instrument Sans variable WOFF2 (+ OFL licence), preloaded; no third-party requests
+- [x] 12-column wide layout at a single 60rem threshold; lab control rail (4) beside results (8), sticky with internal scroll
+- [x] Landing: editorial hero with the exact streak curve (no simulation), numbered four-lab catalogue, exact-vs-estimated primer
+- [x] Lab workbench: eyebrow, answer-first results (`MetricList primary`), chart, supporting metrics, interpretation; provenance tags with distinct markers
+- [x] Chart treatment: faint grid, baseline, direct marker labels with halo, risk role for thresholds (still hatched / labelled)
+- [x] `?page=method` and `?page=uses` in the typed query contract (+ tests); nav Explorar / Método / Usos with `aria-current`, titles, focus; lab → Método section deep link via fragment
+- [x] Método and Usos content in typed per-lab `guide.ts`, verified against each `model.ts`; lab "Supuestos" read from the same list
+- [x] Footer: disclaimer, Luis Cortés attribution, scoped no-cookies / no third-party analytics statement, optional support link (`VITE_SUPPORT_URL`)
+- [ ] Browser verification of the redesign at 1280 px and 360 px (see "Verification" in ARCHITECTURE.md). Not yet done: this pass was checked with tests, typecheck and a production build only.
+
 ### Optional (only after everything above)
 
-- [ ] Preset scenarios as plain links (canonical query strings), a configurable donation link (hidden when unset), Monty Hall
+- [x] A configurable support link, hidden when unset
+- [ ] Preset scenarios as plain links (canonical query strings), Monty Hall

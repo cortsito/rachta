@@ -5,22 +5,35 @@ import { SimulationForm } from '../../components/lab/SimulationForm.tsx';
 import { useParamDraft } from '../../components/lab/useParamDraft.ts';
 import { MetricList, type Metric } from '../../components/ui/MetricList.tsx';
 import { RangeField } from '../../components/ui/RangeField.tsx';
-import { labInfo, type LabViewProps } from '../../app/labs.ts';
+import { labEyebrow, labInfo, type LabViewProps } from '../../app/labs.ts';
 import { useSimulation } from '../../app/useSimulation.ts';
 import { formatInteger, formatInterval, formatNumber, formatPercent, formatSampleCount } from '../../lib/format.ts';
 import { generateSeed } from '../../lib/random.ts';
+import { compoundLossGuide } from './guide.ts';
 import { lossHistogram } from './histogram.ts';
-import { interpretCompoundLoss } from './interpretation.ts';
+import { interpretCompoundLoss, proportionAtMost } from './interpretation.ts';
 import type { CompoundLossResult } from './model.ts';
 import { compoundLossSchema } from './params.ts';
 
 const { specs } = compoundLossSchema;
 const BIN_COUNT = 40;
 
-function buildMetrics(result: CompoundLossResult): Metric[] {
+/**
+ * The lab's single answer, then the figures that support it. The answer is the
+ * share of simulated periods that lose less than the exact mean: the same
+ * figure the interpretation uses to explain why the mean is not typical.
+ */
+function buildMetrics(result: CompoundLossResult): { answer: Metric; supporting: Metric[] } {
   const { futures } = result.input;
   const { exact, mean, median, p90, exceedance } = result;
-  return [
+  const answer: Metric = {
+    id: 'below-mean-estimated',
+    label: 'Periodos que pierden menos que la pérdida media',
+    value: formatPercent(proportionAtMost(result.sortedTotals, exact.mean)),
+    provenance: { kind: 'estimated', samples: futures },
+    detail: `Media exacta: ${formatNumber(exact.mean)} · mediana simulada: ${formatNumber(median)}`,
+  };
+  const supporting: Metric[] = [
     {
       id: 'mean-estimated',
       label: 'Pérdida media por periodo, simulada',
@@ -60,6 +73,7 @@ function buildMetrics(result: CompoundLossResult): Metric[] {
       provenance: { kind: 'exact' },
     },
   ];
+  return { answer, supporting };
 }
 
 function Results({ result }: { result: CompoundLossResult }) {
@@ -67,6 +81,7 @@ function Results({ result }: { result: CompoundLossResult }) {
   const { sortedTotals, mean, median, p90, p99 } = result;
   const upper = Math.max(p99, threshold);
   const { bins, overflow } = lossHistogram(sortedTotals, threshold, upper, BIN_COUNT);
+  const { answer, supporting } = buildMetrics(result);
 
   const description =
     `Distribución de la pérdida total en ${formatInteger(futures)} periodos simulados, hasta ${formatNumber(upper)}. ` +
@@ -77,12 +92,7 @@ function Results({ result }: { result: CompoundLossResult }) {
 
   return (
     <>
-      <MetricList metrics={buildMetrics(result)} label="Métricas de pérdidas compuestas" />
-      <div className="lab__interpretation">
-        {interpretCompoundLoss(result).map((paragraph) => (
-          <p key={paragraph}>{paragraph}</p>
-        ))}
-      </div>
+      <MetricList metrics={[answer]} label="Respuesta" primary />
       <ChartFigure
         title="Distribución de la pérdida total por periodo"
         description={description}
@@ -127,6 +137,12 @@ function Results({ result }: { result: CompoundLossResult }) {
           />
         )}
       </ChartFigure>
+      <MetricList metrics={supporting} label="Métricas de pérdidas compuestas" />
+      <div className="lab__interpretation">
+        {interpretCompoundLoss(result).map((paragraph) => (
+          <p key={paragraph}>{paragraph}</p>
+        ))}
+      </div>
     </>
   );
 }
@@ -144,6 +160,7 @@ export function CompoundLossLab({ params, seed, shareUrl, onRun }: LabViewProps<
 
   return (
     <LabLayout
+      eyebrow={labEyebrow('compound-loss')}
       question={labInfo['compound-loss'].question}
       intro={
         <p>
@@ -216,10 +233,9 @@ export function CompoundLossLab({ params, seed, shareUrl, onRun }: LabViewProps<
       }
       assumptions={
         <ul>
-          <li>El número de eventos por periodo sigue una distribución de Poisson con la media elegida.</li>
-          <li>La severidad de cada evento es lognormal, con mediana igual a la severidad típica elegida y σ igual a la dispersión.</li>
-          <li>Los eventos son independientes entre sí y del número de eventos del periodo.</li>
-          <li>Cada futuro simulado representa un único periodo.</li>
+          {compoundLossGuide.method.assumptions.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
         </ul>
       }
       shareUrl={shareUrl}

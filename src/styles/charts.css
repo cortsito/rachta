@@ -1,12 +1,16 @@
 /*
  * Chart primitives. Series are distinguished by fill vs outline, hatch
- * pattern, stroke width and dash pattern, never by hue alone.
+ * pattern, stroke width and dash pattern, never by hue alone. Colour roles
+ * come from --chart-* tokens: one primary accent per chart, risk for
+ * thresholds of loss or ruin (always hatched or labelled as well).
  */
 @layer components {
   .chart {
     display: grid;
-    gap: var(--space-3);
+    gap: var(--space-4);
     min-inline-size: 0;
+    padding-block-start: var(--space-4);
+    border-block-start: var(--border-rule);
   }
 
   .chart__caption {
@@ -16,104 +20,144 @@
   }
 
   .chart__title {
-    font-weight: bold;
+    font-size: var(--font-size-lede);
+    font-weight: var(--font-weight-heading);
+    font-stretch: var(--font-stretch-display);
+    line-height: var(--line-height-snug);
+    text-wrap: balance;
+  }
+
+  .chart__description {
+    font-size: var(--font-size-small);
+    color: var(--color-muted);
   }
 
   .chart__canvas {
+    display: grid;
+    gap: var(--space-3);
     inline-size: 100%;
     min-inline-size: 0;
     overflow: hidden;
   }
 
   .chart__svg {
-    font-size: 0.75rem;
-    color: var(--chart-ink);
+    font-size: var(--font-size-chart);
+    font-variant-numeric: tabular-nums;
+    color: var(--chart-text);
   }
 
   .chart__svg text {
     fill: currentColor;
   }
 
-  .chart__axis line,
+  /* Frame: faint horizontal grid, a firm baseline, no vertical axis rule. */
   .chart__grid line {
-    stroke: var(--chart-muted);
+    stroke: var(--chart-grid);
     stroke-width: 1;
   }
 
-  .chart__grid line {
-    stroke-dasharray: 2 4;
+  .chart__domain,
+  .chart__tick {
+    stroke: var(--chart-axis);
+    stroke-width: 1;
+  }
+
+  .chart__axis--y .chart__domain,
+  .chart__axis--y .chart__tick {
+    display: none;
   }
 
   .chart__axis-label {
-    font-weight: bold;
+    font-weight: var(--font-weight-strong);
   }
 
+  /* Bars: soft primary fill with a primary outline; highlighted bars carry the risk hatch. */
   .chart__bar {
-    stroke: var(--chart-ink);
-    stroke-width: 0.5;
+    stroke: var(--chart-primary);
+    stroke-width: 0.75;
   }
 
   /* Highlighted bars get their hatch from the `fill` attribute; CSS must not override it. */
   .chart__bar:not([data-highlighted]) {
-    fill: var(--chart-muted);
+    fill: var(--chart-primary-soft);
   }
 
   .chart__bar[data-highlighted] {
+    stroke: var(--chart-risk);
     stroke-width: 1;
   }
 
   .chart__pattern-background {
-    fill: var(--chart-background);
+    fill: var(--chart-risk-soft);
   }
 
   .chart__pattern-line {
-    stroke: var(--chart-ink);
-    stroke-width: 3;
+    stroke: var(--chart-risk);
+    stroke-width: 2.5;
   }
 
+  /* Reference lines and their direct labels (a halo keeps labels legible over marks). */
   .chart__marker line {
     stroke: var(--chart-ink);
-    stroke-width: 1.5;
-    stroke-dasharray: 6 3;
+    stroke-width: 1.25;
+    stroke-dasharray: 5 3;
   }
 
   .chart__marker text {
-    font-weight: bold;
+    fill: var(--chart-ink);
+    font-weight: var(--font-weight-strong);
+    paint-order: stroke;
+    stroke: var(--chart-surface);
+    stroke-width: 3px;
+    stroke-linejoin: round;
   }
 
+  .chart__marker[data-tone='risk'] line {
+    stroke: var(--chart-risk);
+  }
+
+  .chart__marker[data-tone='risk'] text {
+    fill: var(--chart-risk);
+  }
+
+  /* Lines */
   .chart__line {
     fill: none;
     stroke: var(--chart-ink);
     stroke-linejoin: round;
+    stroke-linecap: round;
   }
 
   .chart__line[data-variant='muted'] {
-    stroke: var(--chart-muted);
+    stroke: var(--chart-context);
     stroke-width: 1;
-    stroke-opacity: 0.6;
   }
 
   .chart__line[data-variant='primary'] {
+    stroke: var(--chart-primary);
     stroke-width: 3;
   }
 
   .chart__line[data-variant='secondary'] {
-    stroke-width: 2;
-    stroke-dasharray: 8 4;
+    stroke: var(--chart-primary);
+    stroke-width: 1.75;
+    stroke-dasharray: 7 4;
   }
 
   .chart__line[data-variant='tertiary'] {
-    stroke-width: 2;
+    stroke-width: 1.75;
     stroke-dasharray: 2 3;
   }
 
+  /* Legend and notes */
   .chart__legend {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-2) var(--space-4);
+    gap: var(--space-2) var(--space-5);
     padding: 0;
     list-style: none;
-    font-size: 0.875em;
+    font-size: var(--font-size-caption);
+    color: var(--color-muted);
   }
 
   .chart__legend-item {
@@ -124,22 +168,22 @@
 
   .chart__swatch {
     flex: none;
-    color: var(--chart-ink);
   }
 
+  .chart__note {
+    max-inline-size: var(--measure);
+    font-size: var(--font-size-caption);
+    color: var(--color-muted);
+  }
+
+  /* Data-table fallback */
   .data-table {
-    overflow-x: auto;
+    overflow: auto;
     max-block-size: 24rem;
-    overflow-y: auto;
-  }
-
-  .data-table caption {
-    text-align: start;
-    font-weight: bold;
-    padding-block-end: var(--space-2);
+    font-size: var(--font-size-small);
   }
 
   .data-table td {
-    font-variant-numeric: tabular-nums;
+    text-align: end;
   }
 }

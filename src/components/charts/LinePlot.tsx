@@ -200,7 +200,7 @@ export function LinePlot({
         </g>
         <g className="chart__references" aria-hidden="true">
           {references.map((reference) => (
-            <g key={reference.label} className="chart__marker">
+            <g key={reference.label} className="chart__marker" data-tone={reference.tone}>
               <line x1={MARGIN.left} x2={plotRight} y1={y(reference.value)} y2={y(reference.value)} />
               <text x={plotRight} y={y(reference.value) - 4} textAnchor="end">
                 {reference.label}
@@ -214,10 +214,10 @@ export function LinePlot({
           ))}
         </g>
         <g className="chart__axis chart__axis--x" aria-hidden="true">
-          <line x1={MARGIN.left} x2={plotRight} y1={plotBottom} y2={plotBottom} />
+          <line className="chart__domain" x1={MARGIN.left} x2={plotRight} y1={plotBottom} y2={plotBottom} />
           {xTicks.map((tick) => (
             <g key={tick} transform={`translate(${x(tick)},${plotBottom})`}>
-              <line y2={5} />
+              <line className="chart__tick" y2={5} />
               <text y={18} textAnchor="middle">
                 {formatX(tick)}
               </text>
@@ -228,10 +228,10 @@ export function LinePlot({
           </text>
         </g>
         <g className="chart__axis chart__axis--y" aria-hidden="true">
-          <line x1={MARGIN.left} x2={MARGIN.left} y1={MARGIN.top} y2={plotBottom} />
+          <line className="chart__domain" x1={MARGIN.left} x2={MARGIN.left} y1={MARGIN.top} y2={plotBottom} />
           {yTicks.map((tick) => (
             <g key={tick} transform={`translate(${MARGIN.left},${y(tick)})`}>
-              <line x2={-5} />
+              <line className="chart__tick" x2={-5} />
               <text x={-8} dy="0.32em" textAnchor="end">
                 {formatY(tick)}
               </text>

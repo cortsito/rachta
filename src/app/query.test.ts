@@ -1,15 +1,38 @@
 import { describe, expect, it } from 'vitest';
-import { canonicalizeQuery, defaultLabQuery, parseQuery, resolveQuery, serializeQuery } from './query.ts';
+import { canonicalizeQuery, defaultLabQuery, PAGE_IDS, parseQuery, resolveQuery, serializeQuery } from './query.ts';
 import { LAB_IDS } from './labs.ts';
 
 const fixedSeed = () => 'fresh01';
 
 describe('query-state contract', () => {
   it('treats a missing or unknown lab as the landing view', () => {
-    expect(parseQuery('')).toEqual({ lab: null });
-    expect(parseQuery('?lab=poker&p=0.5')).toEqual({ lab: null });
+    expect(parseQuery('')).toEqual({ lab: null, page: null });
+    expect(parseQuery('?lab=poker&p=0.5')).toEqual({ lab: null, page: null });
     expect(canonicalizeQuery('?lab=poker&seed=x', fixedSeed)).toBe('');
-    expect(serializeQuery({ lab: null })).toBe('');
+    expect(serializeQuery({ lab: null, page: null })).toBe('');
+  });
+
+  it.each(PAGE_IDS)('gives the %s page one canonical URL that round-trips', (page) => {
+    const canonical = `?page=${page}`;
+    expect(parseQuery(canonical)).toEqual({ lab: null, page });
+    expect(serializeQuery({ lab: null, page })).toBe(canonical);
+    expect(canonicalizeQuery(canonical, fixedSeed)).toBe(canonical);
+    // Content pages carry no parameters or seed.
+    expect(canonicalizeQuery(`?seed=abc&page=${page}&junk=1&p=0.5`, fixedSeed)).toBe(canonical);
+  });
+
+  it('treats an unknown or malformed page as the landing view', () => {
+    expect(canonicalizeQuery('?page=about', fixedSeed)).toBe('');
+    expect(canonicalizeQuery('?page=Method', fixedSeed)).toBe('');
+    expect(canonicalizeQuery('?page=', fixedSeed)).toBe('');
+    expect(canonicalizeQuery('?page=method&page=uses', fixedSeed)).toBe('?page=method');
+  });
+
+  it('lets a valid lab win over a page, so lab URLs keep their meaning', () => {
+    const lab = defaultLabQuery('streaks', 'abc');
+    expect(canonicalizeQuery(`${lab}&page=method`, fixedSeed)).toBe(lab);
+    expect(canonicalizeQuery(`?page=uses&${lab.slice(1)}`, fixedSeed)).toBe(lab);
+    expect(canonicalizeQuery('?lab=poker&page=uses', fixedSeed)).toBe('?page=uses');
   });
 
   it('fills defaults, clamps values, drops unknown keys and keeps a valid seed', () => {

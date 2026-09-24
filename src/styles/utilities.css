@@ -13,11 +13,15 @@
 
   .skip-link {
     position: absolute;
+    z-index: 1;
     inset-inline-start: var(--space-2);
     inset-block-start: var(--space-2);
-    padding: var(--space-2) var(--space-3);
-    background: var(--color-background);
-    border: var(--border);
+    padding: var(--space-2) var(--space-4);
+    border: var(--border-control);
+    border-radius: var(--radius-control);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-floating);
+    font-weight: var(--font-weight-strong);
     transform: translateY(-200%);
   }
 

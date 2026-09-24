@@ -4,11 +4,12 @@ import { SimulationForm } from '../../components/lab/SimulationForm.tsx';
 import { useParamDraft } from '../../components/lab/useParamDraft.ts';
 import { MetricList, type Metric } from '../../components/ui/MetricList.tsx';
 import { RangeField } from '../../components/ui/RangeField.tsx';
-import { labInfo, type LabViewProps } from '../../app/labs.ts';
+import { labEyebrow, labInfo, type LabViewProps } from '../../app/labs.ts';
 import { useSimulation } from '../../app/useSimulation.ts';
 import { formatInteger, formatInterval, formatPercent } from '../../lib/format.ts';
 import { generateSeed } from '../../lib/random.ts';
 import { ConfusionMatrix } from './ConfusionMatrix.tsx';
+import { bayesGuide } from './guide.ts';
 import { interpretBayes } from './interpretation.ts';
 import { expectedCounts, type BayesResult } from './model.ts';
 import { bayesSchema } from './params.ts';
@@ -18,17 +19,18 @@ import './bayes.css';
 const { specs } = bayesSchema;
 const PEOPLE_GRID_SIZE = 1000;
 
-function buildMetrics(result: BayesResult): Metric[] {
+/** The lab's single answer, then the figures that support it. */
+function buildMetrics(result: BayesResult): { answer: Metric; supporting: Metric[] } {
   const { population } = result.input;
   const { exact, simulatedPpv } = result;
-  const metrics: Metric[] = [
-    {
-      id: 'ppv-exact',
-      label: 'Probabilidad de tener la condición si el resultado es positivo (VPP)',
-      value: exact.ppv === null ? 'No definido' : formatPercent(exact.ppv),
-      provenance: { kind: 'exact' },
-      detail: exact.ppv === null ? 'Con estos valores, nadie da positivo.' : 'No depende de la semilla.',
-    },
+  const answer: Metric = {
+    id: 'ppv-exact',
+    label: 'Probabilidad de tener la condición si el resultado es positivo (VPP)',
+    value: exact.ppv === null ? 'No definido' : formatPercent(exact.ppv),
+    provenance: { kind: 'exact' },
+    detail: exact.ppv === null ? 'Con estos valores, nadie da positivo.' : 'No depende de la semilla.',
+  };
+  const supporting: Metric[] = [
     {
       id: 'ppv-estimated',
       label: 'La misma probabilidad, en la población simulada',
@@ -47,18 +49,19 @@ function buildMetrics(result: BayesResult): Metric[] {
     },
   ];
   if (exact.npv !== null) {
-    metrics.push({
+    supporting.push({
       id: 'npv-exact',
       label: 'Probabilidad de no tener la condición si el resultado es negativo (VPN)',
       value: formatPercent(exact.npv),
       provenance: { kind: 'exact' },
     });
   }
-  return metrics;
+  return { answer, supporting };
 }
 
 function Results({ result }: { result: BayesResult }) {
   const { population } = result.input;
+  const { answer, supporting } = buildMetrics(result);
   const gridCounts = expectedCounts(result.input, PEOPLE_GRID_SIZE);
   const gridDescription =
     `De ${formatInteger(PEOPLE_GRID_SIZE)} personas ilustrativas, ${formatInteger(gridCounts.truePositive)} son ` +
@@ -67,13 +70,14 @@ function Results({ result }: { result: BayesResult }) {
 
   return (
     <>
-      <MetricList metrics={buildMetrics(result)} label="Métricas de la prueba" />
+      <MetricList metrics={[answer]} label="Respuesta" primary />
+      <ConfusionMatrix expected={result.expected} simulated={result.simulated} population={population} />
+      <MetricList metrics={supporting} label="Métricas de la prueba" />
       <div className="lab__interpretation">
         {interpretBayes(result).map((paragraph) => (
           <p key={paragraph}>{paragraph}</p>
         ))}
       </div>
-      <ConfusionMatrix expected={result.expected} simulated={result.simulated} population={population} />
       <ChartFigure title="Cuadrícula de personas" description={gridDescription}>
         {(labelling) => <PeopleGrid counts={gridCounts} labelling={labelling} />}
       </ChartFigure>
@@ -94,6 +98,7 @@ export function BayesLab({ params, seed, shareUrl, onRun }: LabViewProps<'bayes'
 
   return (
     <LabLayout
+      eyebrow={labEyebrow('bayes')}
       question={labInfo.bayes.question}
       intro={
         <p>
@@ -162,10 +167,9 @@ export function BayesLab({ params, seed, shareUrl, onRun }: LabViewProps<'bayes'
       }
       assumptions={
         <ul>
-          <li>La condición y el resultado de cada persona se sortean de forma independiente del resto.</li>
-          <li>La sensibilidad y la especificidad son fijas: no varían entre personas ni con la prevalencia.</li>
-          <li>La población simulada es ilustrativa; los valores exactos no dependen de su tamaño.</li>
-          <li>Es una herramienta educativa: no ofrece un diagnóstico ni sustituye una decisión médica.</li>
+          {bayesGuide.method.assumptions.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
         </ul>
       }
       shareUrl={shareUrl}

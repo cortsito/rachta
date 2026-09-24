@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { EXACT_LABEL, estimatedLabel } from '../../lib/format.ts';
 
 /**
@@ -31,14 +32,35 @@ export function provenanceLabel(provenance: Provenance): string {
   }
 }
 
-export function MetricList({ metrics, label }: { metrics: readonly Metric[]; label?: string }) {
+/**
+ * The visible provenance label. Each kind has its own marker and colour role,
+ * but the text always carries the meaning.
+ */
+export function ProvenanceTag({ kind, children }: { kind: Provenance['kind']; children: ReactNode }) {
+  return (
+    <span className="provenance" data-provenance={kind}>
+      {children}
+    </span>
+  );
+}
+
+export interface MetricListProps {
+  metrics: readonly Metric[];
+  label?: string;
+  /** Presents the metrics as the lab's main answer rather than supporting figures. */
+  primary?: boolean;
+}
+
+export function MetricList({ metrics, label, primary = false }: MetricListProps) {
   return (
     <dl className="metric-list" aria-label={label}>
       {metrics.map((metric) => (
-        <div className="metric" key={metric.id} data-kind={metric.provenance.kind}>
+        <div className={primary ? 'metric metric--primary' : 'metric'} key={metric.id} data-kind={metric.provenance.kind}>
           <dt className="metric__label">{metric.label}</dt>
           <dd className="metric__value">{metric.value}</dd>
-          <dd className="metric__provenance">{provenanceLabel(metric.provenance)}</dd>
+          <dd className="metric__provenance">
+            <ProvenanceTag kind={metric.provenance.kind}>{provenanceLabel(metric.provenance)}</ProvenanceTag>
+          </dd>
           {metric.detail && <dd className="metric__detail">{metric.detail}</dd>}
         </div>
       ))}

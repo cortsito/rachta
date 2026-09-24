@@ -1,85 +1,241 @@
+/*
+ * Page shell, content widths and responsive placement.
+ * Single layout threshold: 60rem. Below it everything is one column in source
+ * order; above it views use a 12-column grid (--grid-gap gutters).
+ */
 @layer layout {
+  /* Full-bleed shell regions with content centred at --page-max. */
   .site-header,
   .site-main,
   .site-footer {
-    max-inline-size: var(--page-max);
-    margin-inline: auto;
-    padding-inline: var(--space-4);
+    padding-inline: max(var(--gutter), calc((100% - var(--page-max)) / 2));
   }
 
   .site-header {
     display: flex;
     flex-wrap: wrap;
-    align-items: baseline;
-    gap: var(--space-2) var(--space-6);
-    padding-block: var(--space-4);
-    border-block-end: var(--border);
-  }
-
-  .site-nav__list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-2) var(--space-4);
-    padding: 0;
-    list-style: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-1) var(--space-6);
+    padding-block: var(--space-2);
+    border-block-end: var(--border-rule);
   }
 
   .site-main {
-    padding-block: var(--space-6) var(--space-8);
+    padding-block: var(--space-10) var(--space-section);
+    /* Contains the full-bleed hero wash without creating a scroll container. */
+    overflow-x: clip;
   }
 
   .site-footer {
-    padding-block: var(--space-6);
-    border-block-start: var(--border);
-    color: var(--color-muted);
+    display: grid;
+    gap: var(--space-2);
+    padding-block: var(--space-8) var(--space-10);
+    border-block-start: var(--border-rule);
   }
 
-  .landing,
-  .lab {
+  /* Views */
+  .landing {
+    display: grid;
+    gap: var(--space-section);
+  }
+
+  .page {
+    display: grid;
+    gap: var(--space-12);
+  }
+
+  .landing__section,
+  .page__section {
     display: grid;
     gap: var(--space-6);
+    min-inline-size: 0;
   }
 
-  .landing > p,
-  .lab__intro {
+  .page__header {
+    display: grid;
+    gap: var(--space-4);
     max-inline-size: var(--measure);
   }
 
-  .lab__header {
+  /* Landing hero: copy, then the graphic; a quiet wash spans the viewport behind it. */
+  .hero {
+    position: relative;
+    isolation: isolate;
     display: grid;
-    gap: var(--space-3);
+    gap: var(--space-block);
+    align-items: center;
   }
 
-  .lab__body {
-    display: grid;
-    gap: var(--space-8);
+  .hero::before {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    inset-block: calc(-1 * var(--space-10)) calc(-1 * var(--space-10));
+    inset-inline: calc(50% - 50vw);
+    background: var(--gradient-hero);
   }
 
+  .hero__copy,
+  .hero__figure {
+    min-inline-size: 0;
+  }
+
+  /* Lab catalogue rows: number · name · arrow, then question and summary. */
+  .lab-index__item {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: baseline;
+    gap: var(--space-2) var(--space-3);
+  }
+
+  .lab-index__number {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .lab-index__name {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .lab-index__arrow {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  .lab-index__question,
+  .lab-index__summary {
+    grid-column: 1 / -1;
+  }
+
+  /* Lab workbench. Source order is the reading order: header, controls, results, notes, share. */
+  .lab {
+    display: grid;
+    gap: var(--space-10);
+  }
+
+  .lab__header,
   .lab__controls,
   .lab__results,
   .lab__notes,
   .lab__share {
-    display: grid;
-    gap: var(--space-4);
-    align-content: start;
     min-inline-size: 0;
   }
 
-  .lab__interpretation {
+  /* Method and uses entries: an aside header, then the body. */
+  .method,
+  .use {
     display: grid;
-    gap: var(--space-2);
-    max-inline-size: var(--measure);
+    gap: var(--space-6);
   }
 
-  /* Single layout breakpoint: controls beside results on wide screens. */
-  @media (min-width: 48rem) {
-    .lab__body {
-      grid-template-columns: minmax(16rem, var(--controls-width)) minmax(0, 1fr);
+  .method__body,
+  .use__facts {
+    min-inline-size: 0;
+  }
+
+  .lab-pager {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+    gap: var(--space-4) var(--grid-gap);
+    margin-block-start: var(--space-section);
+  }
+
+  @media (min-width: 60rem) {
+    .hero,
+    .lab,
+    .method,
+    .use,
+    .lab-index__item {
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      column-gap: var(--grid-gap);
+    }
+
+    .hero__copy {
+      grid-column: 1 / span 7;
+    }
+
+    .hero__figure {
+      grid-column: 8 / -1;
+    }
+
+    .lab-index__number {
+      grid-column: 1;
+      grid-row: 1 / span 2;
+    }
+
+    .lab-index__name {
+      grid-column: 2 / span 3;
+      grid-row: 1 / span 2;
+    }
+
+    .lab-index__question {
+      grid-column: 5 / span 7;
+      grid-row: 1;
+    }
+
+    .lab-index__summary {
+      grid-column: 5 / span 7;
+      grid-row: 2;
+    }
+
+    .lab-index__arrow {
+      grid-column: 12;
+      grid-row: 1;
+      justify-self: end;
+    }
+
+    /* Control rail (4 columns) beside results, notes and share (8 columns). */
+    .lab__header {
+      grid-column: 1 / span 9;
+      grid-row: 1;
     }
 
     .lab__controls {
+      grid-column: 1 / span 4;
+      grid-row: 2 / span 3;
+      align-self: start;
+      /* Sticky, but never taller than the viewport: a long form scrolls inside the rail. */
       position: sticky;
-      top: var(--space-4);
+      top: var(--sticky-offset);
+      max-block-size: calc(100vh - 2 * var(--sticky-offset));
+      max-block-size: calc(100dvh - 2 * var(--sticky-offset));
+      overflow-y: auto;
+    }
+
+    .lab__results,
+    .lab__notes,
+    .lab__share {
+      grid-column: 5 / -1;
+    }
+
+    .lab__results {
+      grid-row: 2;
+    }
+
+    .lab__notes {
+      grid-row: 3;
+    }
+
+    .lab__share {
+      grid-row: 4;
+    }
+
+    .method__header,
+    .use__header {
+      grid-column: 1 / span 4;
+      align-self: start;
+    }
+
+    .method__header {
+      position: sticky;
+      top: var(--sticky-offset);
+    }
+
+    .method__body,
+    .use__facts {
+      grid-column: 5 / -1;
     }
   }
 }

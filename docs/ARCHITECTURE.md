@@ -7,6 +7,7 @@ Durable technical decisions. `docs/PRODUCT_BRIEF.md` is the product contract; th
 - React 19, strict TypeScript 7 (`tsc -b`, project references), Vite 8, Vitest 5. Runtime dependencies: `react` and `react-dom` only.
 - No router, state library, CSS framework, component kit, chart library, or linter. Charts are hand-written SVG.
 - Static SPA. `vite.config.ts` uses `base: './'`, so one `dist/` works at a domain root or a sub-path. All state is in the query string; no rewrites are needed.
+- The only typeface, Instrument Sans (variable, SIL OFL 1.1), is self-hosted as one WOFF2 file in `src/assets/fonts/` with its licence. The app makes no third-party requests.
 
 ## Source layout
 
@@ -14,17 +15,23 @@ Durable technical decisions. `docs/PRODUCT_BRIEF.md` is the product contract; th
 src/
   main.tsx                 entry: CSS imports in layer order, URL canonicalization, render
   app/                     composition and the only DOM/history boundary
-    labs.ts                LabId list, nav copy, schema registry, LabViewProps
-    query.ts (+test)       pure URL parse/serialize/canonicalize contract
-    location.ts            window.location/history store, navigate(), followLink()
+    labs.ts                LabId list, catalogue copy, schema registry, LabViewProps, LabGuide types
+    query.ts (+test)       pure URL parse/serialize/canonicalize contract (labs and pages)
+    location.ts            window.location/history store, navigate(), followLink(), currentFragment()
     simulation.ts          kernel registry, worker client, main-thread fallback
     simulation.worker.ts   module worker: runs one kernel per request
     useSimulation.ts       hook: input → running/result/stale/error
-    App.tsx                shell (skip link, header/nav, main, footer), lab switch, focus + title
-    Landing.tsx            entry view
+    config.ts (+test)      optional build-time configuration (support link)
+    guides.ts              registry of each lab's Método/Usos content
+    App.tsx                shell (skip link, header/nav, main, footer), view switch, lab pager, focus + title
+    Landing.tsx            entry view: hero graphic, lab catalogue, exact-vs-estimated primer
+    MethodPage.tsx         `?page=method`
+    UsesPage.tsx           `?page=uses`
+    views.test.tsx         navigation state, titles and static markup of the shell and pages
   features/<lab>/          streaks, bayes, ruin, compound-loss
     params.ts              schema: URL keys, bounds, steps, defaults, cross-field rules
     model.ts (+test)       pure kernel, exact formulas, typed input/result
+    guide.ts               Método (question, model, formulas, procedure, exact/estimated, assumptions, limits) and Usos content
     <Lab>Lab.tsx           the screen
     other .tsx/.ts/.css    feature-only visuals, interpretation copy, styles
   components/
@@ -33,18 +40,23 @@ src/
     charts/                ChartFigure/DataTable, Histogram, LinePlot, Legend/PatternDefs, scale, useChartWidth
   lib/                     React-free: random, distributions, stats, params, format (+tests)
   styles/                  layers, reset, tokens, base, layout, components, charts, utilities
+  assets/fonts/            Instrument Sans variable WOFF2 + OFL.txt
 ```
 
-Dependency direction: `lib` imports nothing from the app. `features/*/model.ts` and `params.ts` import only `lib`. Feature screens may import `lib`, `components`, `app/labs.ts` (types, copy) and `app/useSimulation.ts`. `app` imports feature schemas, kernels and screens. `components` never imports from `features` or `app`.
+Dependency direction: `lib` imports nothing from the app. `features/*/model.ts` and `params.ts` import only `lib`. Feature screens and `guide.ts` may import `lib`, `components`, `app/labs.ts` (types, copy) and `app/useSimulation.ts`. `app` imports feature schemas, kernels, guides and screens. `components` never imports from `features` or `app`. The worker imports only the kernels.
 
 ## State and URL contract (`app/query.ts`)
 
 ```
 ?lab=<streaks|bayes|ruin|compound-loss>&<param>=<value>…&seed=<seed>
+?page=<method|uses>
 ```
 
 - The address bar is the single source of application state. There is no other store.
-- No `lab` or an unknown `lab` means the landing view and serializes to `""`.
+- A valid `lab` always wins; any `page` key next to it is dropped, so every lab URL keeps its meaning.
+- Otherwise a valid `page` selects a content view. Its canonical URL is exactly `?page=method` or `?page=uses`: pages take no parameters or seed, and other keys are dropped.
+- No `lab`/`page`, or an unknown value of either, means the landing view (Explorar, which holds the lab catalogue) and serializes to `""`.
+- A URL fragment (`?page=method#metodo-bayes`) only locates a section of a view. It is not state: canonicalization preserves it, `navigate(search, mode, fragment)` writes it, and after in-app navigation focus moves to the element it names instead of `#view-title`. On first load the view scrolls to it without taking focus.
 - Parameter keys, order, bounds, step and default come from the lab's schema in `features/<lab>/params.ts`. Values are stored in **model units**: probabilities are fractions (`p=0.55`), counts are integers. `display: 'percent'` only affects form fields.
 - Parsing accepts plain decimals only (`/^-?\d+(\.\d+)?$/`). Anything else becomes the default. Numbers are clamped, snapped to the step grid from `min`, and rounded to the step's decimals. Then the schema's `constrain` applies cross-field rules (streak ≤ attempts; ruin `rounds` ≤ the overflow-safe limit below). Unknown keys are dropped.
 - Seeds match `/^[A-Za-z0-9_-]{1,32}$/`. A missing or invalid seed is replaced with `generateSeed()` (8 chars, Web Crypto) during canonicalization, never while rendering.
@@ -79,12 +91,14 @@ Ruin overflow safety: capital is a plain float64 product, and no path can exceed
 ## Component contracts
 
 - **Lab screen** (`features/<lab>/<Lab>Lab.tsx`) receives `LabViewProps<L>` (`params`, `seed`, `shareUrl`, `onRun`). It owns `useParamDraft(schema, params)` for the form draft and `useSimulation(lab, {...params, seed})` for results. It renders exactly one `LabLayout`. `App.tsx`'s `LabView` switch is the only place screens are wired.
-- **LabLayout** provides the brief's lab contract. It has an `h1#view-title` (focused after view navigation), a "Hipótesis" section (controls) and a "Resultados" section with `aria-busy` and a `role="status"` line. It ends with the "Cómo leer esto" / "Supuestos" disclosures and the share section. Screens pass slots and do not recreate this structure.
+- **LabLayout** provides the brief's lab contract. It has an eyebrow (`labEyebrow(lab)`), an `h1#view-title` (focused after view navigation), a "Hipótesis" section (controls) and a "Resultados" section with `aria-busy` and a `role="status"` line. It ends with the "Cómo leer esto" / "Supuestos" disclosures and the share section. Its children are siblings in that source order, which is also the reading and tab order; wide screens place the controls in a rail beside the other three. Screens pass slots and do not recreate this structure.
+- **Results order**: every screen's `buildMetrics` returns `{ answer, supporting }`. The screen renders the answer (`MetricList primary`), then the chart or table that explains it, then the supporting metrics and the interpretation, then any secondary visual. The compound-loss answer is the share of simulated periods that lose less than the exact mean (`proportionAtMost`, the figure its interpretation already used), labelled as an estimate.
+- **Supuestos** come from `guide.method.assumptions`, the same list the Método page shows. The App renders a **lab pager** after each lab: a link to the lab's Método section and to the next lab.
 - **SimulationForm** holds the fieldset/legend, the repeat-seed checkbox and the `Simular` submit. It calls `reportValidity()` before `onSimulate`.
 - **RangeField** is the accessible control: a labelled number input with hint and error text, `aria-invalid`, and a Spanish custom validity message. The slider is `aria-hidden` and `tabIndex=-1`. `onChange` receives only valid, normalized model-unit values. Use `max` for cross-field bounds.
-- **MetricList** requires a `Provenance` on every metric: `exact` → "Exacto", `estimated` → "Estimado con N simulaciones", or `sample` → a stated single-run description. Format values with `lib/format.ts` (3 significant figures; `formatPercent` never rounds to 0 %/100 %).
+- **MetricList** requires a `Provenance` on every metric: `exact` → "Exacto", `estimated` → "Estimado con N simulaciones", or `sample` → a stated single-run description. Format values with `lib/format.ts` (3 significant figures; `formatPercent` never rounds to 0 %/100 %). `primary` presents the lab's single answer. **ProvenanceTag** renders a provenance label (`.provenance[data-provenance]`); the landing primer and Método reuse it.
 - **ChartFigure** gives each graphic a visible title, a results-specific text description (the text alternative), and an optional `DataTable` inside a disclosure. Its render prop provides `aria-labelledby`/`aria-describedby` for the `<svg role="img">`.
-- **Histogram** takes bins `{x0, x1, count, highlighted?, highlightedCount?}` (use `discrete` for integer data), `markers` (vertical lines) and a legend. Highlighted bars use a hatch pattern. `highlightedCount` hatches only that many of a bin's observations, from the baseline up; compound loss uses it so hatching equals the strict `> threshold` rule.
+- **Histogram** takes bins `{x0, x1, count, highlighted?, highlightedCount?}` (use `discrete` for integer data), `markers` (vertical lines) and a legend. A `ChartMarker` may set `tone: 'risk'` for a loss or ruin level (the ruin reference line); its label still names it. Highlighted bars use a hatch pattern. `highlightedCount` hatches only that many of a bin's observations, from the baseline up; compound loss uses it so hatching equals the strict `> threshold` rule.
 - **LinePlot** takes series `{id, label, values, x?, variant: muted|primary|secondary|tertiary, fitDomain?}`, `yScale: 'linear'|'log'` and `references` (horizontal lines). Series that share a label share one legend entry. The y domain covers the fitting series and the references (a log axis spans at least one decade). Series with `fitDomain: false` (the ruin sample paths) are clipped to the plot, and a visible note, linked with `aria-describedby`, says how many are clipped. Non-finite values are skipped, and on a log axis non-positive values are pinned to the floor.
 - Charts measure their container (`useChartWidth`) and draw in CSS pixels, so text stays legible on phones.
 - Feature-only visuals (e.g. `features/streaks/RunSequence.tsx`) stay in the feature. Promote a piece to `components/` only once a second lab needs it.
@@ -92,16 +106,17 @@ Ruin overflow safety: capital is a plain float64 product, and no path can exceed
 ## CSS contract
 
 - Plain CSS in cascade layers, declared once in `styles/layers.css`: `reset, tokens, base, layout, components, utilities`. Every file wraps its rules in its layer. Feature stylesheets (`features/<lab>/*.css`, imported by the screen) use `@layer components`.
-- Tokens are structural: spacing, measure, control size, and focus and border styles. Colours are CSS system colours (`Canvas`, `CanvasText`, `GrayText`, `LinkText`, `Highlight`) with `color-scheme: light dark`. There is no palette, custom font, shadow, gradient or theme switch.
-- There is a single breakpoint at `48rem`, where controls sit beside the results. The minimum control height is `--control-min-size` (2.75rem).
-- Selectors are BEM-like classes (`block__element--modifier`) plus state via attributes (`[data-highlighted]`, `[data-variant]`, `[data-kind]`, `[data-invalid]`, `[aria-busy]`, `[aria-current]`). Do not style by element structure deep in components.
+- `docs/DESIGN_SYSTEM.md` defines the adopted visual direction. Tokens use a two-tier model: primitives in `tokens.css` (ramps, sizes, spacing, radii, shadows, the `@font-face`), then semantic roles (`--color-*`, `--chart-*`, `--font-*`, `--space-section`, `--shadow-raised`, …) consumed by all component and feature CSS. Do not hard-code palette values outside tokens. The direction is light-only (`color-scheme: light`), uses self-hosted Instrument Sans with a system fallback, and permits only the restrained elevation and gradient treatment described there.
+- Instrument Sans has no Greek letters or math symbols (σ, λ, μ, ≥, ², ³). Those glyphs in formulas and labels fall back to the system sans-serif; do not add a second typeface for them.
+- There is a single layout threshold at `60rem`. Above it views use a 12-column grid: the lab control rail spans 4 columns beside results, notes and share (8); the landing hero is 7 + 5; Método and Usos entries put their header in 4 columns and the body in 8. The rail is sticky and scrolls internally if it is taller than the viewport, so `Simular` is always reachable. Below 60rem everything is one column in source order. The minimum control height is `--control-min-size` (2.75rem).
+- Selectors are BEM-like classes (`block__element--modifier`) plus state via attributes (`[data-highlighted]`, `[data-variant]`, `[data-kind]`, `[data-provenance]`, `[data-tone]`, `[data-invalid]`, `[aria-busy]`, `[aria-current]`). Do not style by element structure deep in components. `.eyebrow`, `.note`, `.glossary` and `.section-title` are shared blocks across views.
 - SVG elements whose `fill` attribute is a pattern must not receive a CSS `fill`, because CSS overrides presentation attributes. Hence the `:not([data-highlighted])` selectors.
 - Chart series must differ by pattern, outline, width or dash, never by hue alone.
 
 ## Invariants
 
 1. Same URL (lab + params + seed) ⇒ identical results, charts and metrics.
-2. Every lab URL round-trips: `canonicalizeQuery(canonical) === canonical`.
+2. Every lab URL and page URL round-trips: `canonicalizeQuery(canonical) === canonical`.
 3. Malformed query values never throw. They are defaulted or clamped.
 4. No estimated number is shown without its sample count. Exact values are labelled "Exacto".
 5. Kernels never touch React, the DOM, `Math.random` or time.
@@ -121,11 +136,12 @@ npm run preview     # serve dist/ at http://localhost:4173
 
 Browser checks (manual or scripted; Playwright is not a project dependency) cover these points at 1280 px and 360 px:
 
-- Navigation: focus lands on the heading, and `aria-current` is set.
+- Navigation: focus lands on the heading (or on the Método section named by the fragment), `aria-current` is set, and the title changes. Explorar, Método and Usos have their own URLs, and Back returns to the previous view.
 - Editing inputs and running `Simular` updates the URL, and the seed changes unless the repeat-seed box is checked.
 - Invalid input shows an error and blocks the run.
 - Copying the link and opening it reproduces identical metrics.
 - Malformed URLs are canonicalized.
 - Back leaves the lab.
 - Tab order: skip link, fields, `Simular`, disclosures, share. Sliders are not tab stops.
-- No horizontal overflow at 360 px, and no console errors.
+- No horizontal overflow at 360 px, and no console errors. Hierarchy, controls and charts are readable at 1280 px and 360 px.
+- The font loads from the app's own origin (no third-party request).

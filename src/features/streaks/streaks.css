@@ -1,18 +1,22 @@
 @layer components {
+  /* Success = filled primary, failure = outlined, longest losing streak = risk hatch. */
   .run-sequence__cell {
-    stroke: var(--chart-ink);
+    stroke: var(--chart-neutral);
     stroke-width: 1;
   }
 
   .run-sequence__cell[data-outcome='success'] {
-    fill: var(--chart-ink);
+    fill: var(--chart-primary);
+    stroke: var(--chart-primary);
   }
 
   .run-sequence__cell[data-outcome='failure']:not([data-streak]) {
-    fill: var(--chart-background);
+    fill: var(--chart-surface);
   }
 
+  /* The hatch comes from the `fill` attribute; only the outline is styled here. */
   .run-sequence__cell[data-streak] {
-    stroke-width: 2;
+    stroke: var(--chart-risk);
+    stroke-width: 1.5;
   }
 }

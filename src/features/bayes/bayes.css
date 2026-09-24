@@ -12,16 +12,39 @@
     text-align: start;
   }
 
+  .confusion-matrix th[scope='colgroup'] {
+    color: var(--color-ink);
+    text-align: center;
+  }
+
+  /*
+   * People grid: shape tells condition (square) from no condition (circle);
+   * fill tells a positive test (filled) from a negative one (outline).
+   * Hue only reinforces it: primary for the condition, comparison for false positives.
+   */
   .people-grid__person {
-    stroke: var(--chart-ink);
     stroke-width: 1;
   }
 
-  .people-grid__person:not([data-outline]) {
-    fill: var(--chart-ink);
+  .people-grid__person[data-outline] {
+    fill: var(--chart-surface);
   }
 
-  .people-grid__person[data-outline] {
-    fill: var(--chart-background);
+  .people-grid__person[data-kind='truePositive'],
+  .people-grid__person[data-kind='falseNegative'] {
+    stroke: var(--chart-primary);
+  }
+
+  .people-grid__person[data-kind='truePositive'] {
+    fill: var(--chart-primary);
+  }
+
+  .people-grid__person[data-kind='falsePositive'] {
+    fill: var(--chart-comparison);
+    stroke: var(--chart-comparison);
+  }
+
+  .people-grid__person[data-kind='trueNegative'] {
+    stroke: var(--chart-neutral);
   }
 }
