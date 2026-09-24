@@ -8,11 +8,12 @@
     font-family: var(--font-sans);
     font-size: var(--font-size-body);
     font-weight: var(--font-weight-body);
-    line-height: var(--line-height-body);
+    line-height: 1.6;
     color: var(--color-ink);
     background: var(--color-page);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 
   h1,

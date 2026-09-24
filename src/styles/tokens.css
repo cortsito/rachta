@@ -26,18 +26,20 @@
 
     /* ---- Primitives: colour ---- */
     --neutral-0: #ffffff;
-    --neutral-25: #fbfbf9;
-    --neutral-50: #f4f5f2;
-    --neutral-200: #e2e5e1;
-    --neutral-300: #cdd2cc;
-    --neutral-500: #7c8580;
-    --neutral-600: #5d6661;
-    --neutral-900: #171a18;
-    --blue-50: #f2f6ff;
-    --blue-100: #e8efff;
-    --blue-200: #cfdcfb;
-    --blue-600: #2459d6;
-    --blue-700: #1c47ad;
+    --neutral-25: #ffffff;
+    --neutral-50: #f6f8fc;
+    --neutral-200: #e0e6ef;
+    --neutral-300: #c7d0dd;
+    --neutral-500: #687586;
+    --neutral-600: #4f5d6c;
+    --neutral-900: #141b2b;
+    --blue-50: #f3f7ff;
+    --blue-100: #e5edff;
+    --blue-200: #c8d7ff;
+    --blue-600: #315ad5;
+    --blue-700: #2446af;
+    --violet-400: #8372e8;
+    --violet-600: #6554cf;
     --teal-600: #08796d;
     --amber-600: #a76424;
     --red-50: #fbeeed;
@@ -73,13 +75,13 @@
     --space-12: 3rem;
     --radius-1: 4px;
     --radius-2: 8px;
-    --shadow-1: 0 1px 2px rgb(23 26 24 / 0.05);
-    --shadow-2: 0 1px 2px rgb(23 26 24 / 0.04), 0 12px 32px -18px rgb(23 26 24 / 0.22);
+    --shadow-1: 0 1px 2px rgb(20 27 43 / 0.04), 0 6px 18px -14px rgb(33 71 145 / 0.2);
+    --shadow-2: 0 1px 2px rgb(20 27 43 / 0.04), 0 18px 42px -24px rgb(33 71 145 / 0.3);
 
     /* ==== Semantic roles ==== */
 
     /* Surfaces and text */
-    --color-page: var(--neutral-25);
+    --color-page: var(--neutral-0);
     --color-surface: var(--neutral-0);
     --color-surface-muted: var(--neutral-50);
     --color-ink: var(--neutral-900);
@@ -107,8 +109,15 @@
     --color-estimated: var(--blue-600);
     --color-sample: var(--neutral-600);
 
-    /* Atmosphere: the single landing wash. Never encodes data. */
-    --gradient-hero: linear-gradient(to bottom, var(--blue-50), var(--neutral-25));
+    /* Atmosphere never encodes data. The page remains white; light gathers in intentional places. */
+    --gradient-hero:
+      radial-gradient(72% 120% at 98% 8%, rgb(131 114 232 / 0.23), transparent 67%),
+      radial-gradient(62% 98% at 42% -22%, rgb(49 119 232 / 0.2), transparent 66%),
+      linear-gradient(180deg, var(--neutral-0) 0%, var(--blue-50) 100%);
+    --gradient-figure: linear-gradient(145deg, var(--neutral-0) 0%, var(--blue-50) 100%);
+    --gradient-workbench: linear-gradient(145deg, var(--neutral-0) 0%, var(--blue-50) 145%);
+    --gradient-action: linear-gradient(112deg, var(--blue-700) 0%, var(--blue-600) 48%, var(--violet-600) 100%);
+    --gradient-row-hover: linear-gradient(90deg, var(--blue-50) 0%, transparent 72%);
 
     /* Charts (series also differ by pattern, outline, width or dash) */
     --chart-ink: var(--neutral-900);
@@ -126,11 +135,11 @@
 
     /* Typography roles */
     --font-sans: var(--font-family-instrument);
-    --font-weight-body: var(--weight-400);
+    --font-weight-body: var(--weight-450);
     --font-weight-strong: var(--weight-550);
     --font-weight-heading: var(--weight-550);
-    --font-weight-display: var(--weight-450);
-    --font-stretch-display: var(--stretch-86);
+    --font-weight-display: var(--weight-550);
+    --font-stretch-display: var(--stretch-92);
     --font-stretch-label: var(--stretch-92);
     --font-size-chart: var(--size-100);
     --font-size-label: var(--size-100);
@@ -159,6 +168,8 @@
     --radius-surface: var(--radius-2);
     --shadow-raised: var(--shadow-1);
     --shadow-floating: var(--shadow-2);
+    --shadow-action: 0 8px 18px -12px rgb(49 90 213 / 0.75);
+    --shadow-action-hover: 0 12px 24px -14px rgb(49 90 213 / 0.85);
     --focus-ring: 2px solid var(--color-focus);
     --focus-offset: 2px;
 
@@ -171,7 +182,9 @@
     --space-section: clamp(3rem, 2rem + 4vw, 5.5rem);
     --control-min-size: 2.75rem;
     --sticky-offset: var(--space-6);
-    --motion-duration: 160ms;
+    --motion-duration: 180ms;
+    --motion-duration-slow: 700ms;
+    --motion-duration-ambient: 14s;
     --motion-ease: cubic-bezier(0.2, 0, 0, 1);
   }
 }

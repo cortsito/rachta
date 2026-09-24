@@ -18,6 +18,7 @@
     justify-content: space-between;
     gap: var(--space-1) var(--space-6);
     padding-block: var(--space-2);
+    background: var(--color-page);
     border-block-end: var(--border-rule);
   }
 
@@ -74,11 +75,22 @@
     inset-block: calc(-1 * var(--space-10)) calc(-1 * var(--space-10));
     inset-inline: calc(50% - 50vw);
     background: var(--gradient-hero);
+    background-position: 0% 0%;
+    background-size: 120% 120%;
+    animation: hero-gradient-shift var(--motion-duration-ambient) ease-in-out infinite alternate;
   }
 
   .hero__copy,
   .hero__figure {
     min-inline-size: 0;
+  }
+
+  .hero__copy {
+    animation: view-enter var(--motion-duration-slow) var(--motion-ease) both;
+  }
+
+  .hero__figure {
+    animation: view-enter var(--motion-duration-slow) var(--motion-ease) 90ms both;
   }
 
   /* Lab catalogue rows: number · name · arrow, then question and summary. */
@@ -140,6 +152,28 @@
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
     gap: var(--space-4) var(--grid-gap);
     margin-block-start: var(--space-section);
+  }
+
+  @keyframes hero-gradient-shift {
+    from {
+      background-position: 0% 0%;
+    }
+
+    to {
+      background-position: 100% 28%;
+    }
+  }
+
+  @keyframes view-enter {
+    from {
+      opacity: 0;
+      transform: translateY(0.75rem);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   @media (min-width: 60rem) {

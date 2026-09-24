@@ -37,12 +37,13 @@
     display: inline-flex;
     align-items: center;
     min-block-size: var(--control-min-size);
-    font-size: var(--font-size-lede);
-    font-weight: var(--font-weight-heading);
-    font-stretch: var(--font-stretch-display);
-    letter-spacing: var(--tracking-heading);
+    font-size: var(--font-size-small);
+    font-weight: 700;
+    font-stretch: 100%;
+    letter-spacing: 0.12em;
     color: var(--color-ink);
     text-decoration: none;
+    text-transform: uppercase;
   }
 
   .site-header__name:hover {
@@ -103,23 +104,31 @@
     cursor: pointer;
     transition:
       background-color var(--motion-duration) var(--motion-ease),
-      border-color var(--motion-duration) var(--motion-ease);
+      background-position calc(var(--motion-duration) * 2) var(--motion-ease),
+      border-color var(--motion-duration) var(--motion-ease),
+      box-shadow var(--motion-duration) var(--motion-ease),
+      transform var(--motion-duration) var(--motion-ease);
   }
 
   .button:hover {
     border-color: var(--color-ink);
     color: var(--color-ink);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-raised);
   }
 
   .button--primary {
     border-color: var(--color-action);
-    background: var(--color-action);
+    background: var(--gradient-action);
+    background-size: 160% 100%;
+    box-shadow: var(--shadow-action);
     color: var(--color-on-action);
   }
 
   .button--primary:hover {
     border-color: var(--color-action-hover);
-    background: var(--color-action-hover);
+    background-position: 100% 0;
+    box-shadow: var(--shadow-action-hover);
     color: var(--color-on-action);
   }
 
@@ -258,7 +267,7 @@
     padding: var(--space-5);
     border: var(--border-rule);
     border-radius: var(--radius-surface);
-    background: var(--color-surface);
+    background: var(--gradient-workbench);
     box-shadow: var(--shadow-raised);
   }
 
@@ -266,6 +275,7 @@
     display: grid;
     align-content: start;
     gap: var(--space-10);
+    animation: view-enter var(--motion-duration-slow) var(--motion-ease) 60ms both;
   }
 
   .lab__results-header {
@@ -551,7 +561,7 @@
     padding: var(--space-5);
     border: var(--border-rule);
     border-radius: var(--radius-surface);
-    background: var(--color-surface);
+    background: var(--gradient-figure);
     box-shadow: var(--shadow-floating);
   }
 
@@ -572,6 +582,10 @@
     position: relative;
     padding-block: var(--space-6);
     border-block-end: var(--border-rule);
+    background: transparent;
+    transition:
+      background-color var(--motion-duration) var(--motion-ease),
+      background-image var(--motion-duration) var(--motion-ease);
   }
 
   .lab-index__number {
@@ -606,6 +620,10 @@
 
   .lab-index__item:hover .lab-index__link {
     color: var(--color-link);
+  }
+
+  .lab-index__item:hover {
+    background: var(--gradient-row-hover);
   }
 
   .lab-index__summary {
